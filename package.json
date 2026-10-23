@@ -1,0 +1,64 @@
+{
+  "name": "onmcp",
+  "version": "0.0.0",
+  "description": "Keeps your MCP server agent-friendly: lints the tools, prompts and resources it lists the way a model reads them, with the fix. CLI, GitHub Action and MCP server.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "linter",
+    "lint",
+    "ai-agents",
+    "llm",
+    "tool-calling",
+    "agent-guardrails",
+    "claude-code"
+  ],
+  "homepage": "https://github.com/dgesteves/onmcp#readme",
+  "bugs": "https://github.com/dgesteves/onmcp/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dgesteves/onmcp.git"
+  },
+  "license": "MIT",
+  "author": "Diogo Esteves (https://github.com/dgesteves)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@11.6.0",
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "publint": "^0.3.25",
+    "tsdown": "^0.23.2",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}
