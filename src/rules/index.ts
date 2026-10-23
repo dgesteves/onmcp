@@ -1,4 +1,5 @@
 import type { Rule } from '../types.js';
+import { paramDescription } from './param-description.js';
 import { requiredProperties } from './required-properties.js';
 import { schemaObject } from './schema-object.js';
 import { toolDescription } from './tool-description.js';
@@ -12,4 +13,5 @@ export const rules: readonly Rule[] = [
   uniqueNames,
   schemaObject,
   requiredProperties,
+  paramDescription,
 ];

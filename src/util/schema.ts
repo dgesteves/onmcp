@@ -40,3 +40,18 @@ export function* walk(schema: JsonSchema, path: string, depth = 0): Generator<Sc
 export function isSchema(value: unknown): value is JsonSchema {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+/**
+ * The schema a local $ref points to, such as `#/$defs/tag` or `#/definitions/tag`, or undefined
+ * when it isn't local or points nowhere. ~0 and ~1 escapes are read as JSON Pointer says.
+ */
+export function resolveRef(root: JsonSchema, ref: unknown): JsonSchema | undefined {
+  if (typeof ref !== 'string' || !ref.startsWith('#/')) return undefined;
+  let node: unknown = root;
+  for (const token of ref.slice(2).split('/')) {
+    const key = token.replaceAll('~1', '/').replaceAll('~0', '~');
+    if (!isSchema(node) || !Object.hasOwn(node, key)) return undefined;
+    node = node[key];
+  }
+  return isSchema(node) ? node : undefined;
+}
