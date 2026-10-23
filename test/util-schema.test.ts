@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 
 import { closest } from '../src/util/closest.js';
-import { walk } from '../src/util/schema.js';
+import { resolveRef, walk } from '../src/util/schema.js';
 
 test('walk visits every schema, depth first, with its path and depth', () => {
   const schema = {
@@ -45,4 +45,19 @@ test('closest finds a typo, a swap and a case change, and not an unrelated word'
   expect(closest('Query', ['query'])).toBe('query');
   expect(closest('id', ['url', 'path'])).toBeUndefined();
   expect(closest('anything', [])).toBeUndefined();
+});
+
+test('resolveRef follows a local JSON Pointer, and nothing else', () => {
+  const root = {
+    $defs: { tag: { type: 'string' }, 'a/b': { type: 'integer' } },
+    definitions: { old: { type: 'boolean' } },
+  };
+  expect(resolveRef(root, '#/$defs/tag')).toEqual({ type: 'string' });
+  expect(resolveRef(root, '#/$defs/a~1b')).toEqual({ type: 'integer' });
+  expect(resolveRef(root, '#/definitions/old')).toEqual({ type: 'boolean' });
+  expect(resolveRef(root, '#/$defs/missing')).toBeUndefined();
+  expect(resolveRef(root, 'https://example.com/schema.json')).toBeUndefined();
+  expect(resolveRef(root, '#/$defs/tag/type')).toBeUndefined();
+  expect(resolveRef(root, '#/constructor')).toBeUndefined();
+  expect(resolveRef(root, undefined)).toBeUndefined();
 });
