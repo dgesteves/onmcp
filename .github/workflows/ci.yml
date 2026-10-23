@@ -30,16 +30,17 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  node20:
-    # engines says >=20.19: the tests run on the oldest Node it allows, too.
-    name: Tests on Node 20
+  node22:
+    # engines says >=22.13 (Node 20 is end-of-life, and pnpm 11 needs 22.13): the tests run on the
+    # oldest Node it allows, too.
+    name: Tests on Node 22
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 20.19
+          node-version: 22.13
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test

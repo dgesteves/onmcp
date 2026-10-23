@@ -4,7 +4,7 @@ export default defineConfig({
   entry: { index: 'src/index.ts' },
   format: 'esm',
   platform: 'node',
-  target: 'node20.19',
+  target: 'node22.13',
   fixedExtension: false,
   dts: true,
   clean: true,
