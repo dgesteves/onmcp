@@ -1,5 +1,6 @@
 import type { Rule } from '../types.js';
 import { hiddenCharacters } from './hidden-characters.js';
+import { injectionPhrases } from './injection-phrases.js';
 import { paramDescription } from './param-description.js';
 import { requiredProperties } from './required-properties.js';
 import { schemaObject } from './schema-object.js';
@@ -16,4 +17,5 @@ export const rules: readonly Rule[] = [
   requiredProperties,
   paramDescription,
   hiddenCharacters,
+  injectionPhrases,
 ];
