@@ -29,6 +29,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Run the built CLI on a snapshot with no problems
+        run: node dist/cli.js check test/fixtures/docs-server.json
 
   node22:
     # engines says >=22.13 (Node 20 is end-of-life, and pnpm 11 needs 22.13): the tests run on the
