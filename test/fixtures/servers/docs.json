@@ -1,0 +1,28 @@
+{
+  "serverInfo": { "name": "docs", "version": "2.1.0", "title": "Docs" },
+  "instructions": "Search before you fetch a page.",
+  "capabilities": { "tools": {}, "prompts": {}, "resources": {} },
+  "tools": [
+    {
+      "name": "search_docs",
+      "description": "Searches the docs and returns the best matching pages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "query": { "type": "string", "description": "What to look for." } },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_page",
+      "description": "Returns a docs page as Markdown.",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "path": { "type": "string", "description": "The page's path." } },
+        "required": ["path"]
+      }
+    },
+    { "name": "sync", "inputSchema": { "type": "object" } }
+  ],
+  "prompts": [{ "name": "summarize", "description": "Summarizes a page." }],
+  "resources": [{ "uri": "docs://index", "name": "index", "mimeType": "text/markdown" }]
+}
