@@ -36,6 +36,11 @@ jobs:
           set +e
           node dist/cli.js check -- node test/fixtures/servers/fake-server.mjs test/fixtures/servers/docs.json
           test $? -eq 1
+      - name: Run the built CLI on the README's example, which has 5 problems
+        run: |
+          set +e
+          node dist/cli.js check examples/poisoned-server.json > example.txt
+          test $? -eq 1 && grep -q "5 problems (4 errors, 1 warning) in 3 tools" example.txt
 
   node22:
     # engines says >=22.13 (Node 20 is end-of-life, and pnpm 11 needs 22.13): the tests run on the
