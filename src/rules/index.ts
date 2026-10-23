@@ -4,6 +4,7 @@ import { injectionPhrases } from './injection-phrases.js';
 import { paramDescription } from './param-description.js';
 import { requiredProperties } from './required-properties.js';
 import { schemaObject } from './schema-object.js';
+import { sensitivePaths } from './sensitive-paths.js';
 import { toolDescription } from './tool-description.js';
 import { toolName } from './tool-name.js';
 import { uniqueNames } from './unique-names.js';
@@ -18,4 +19,5 @@ export const rules: readonly Rule[] = [
   paramDescription,
   hiddenCharacters,
   injectionPhrases,
+  sensitivePaths,
 ];
