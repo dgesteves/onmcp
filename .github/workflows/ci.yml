@@ -31,6 +31,11 @@ jobs:
       - run: pnpm build
       - name: Run the built CLI on a snapshot with no problems
         run: node dist/cli.js check test/fixtures/docs-server.json
+      - name: Run the built CLI on a server over stdio, which has a tool with no description
+        run: |
+          set +e
+          node dist/cli.js check -- node test/fixtures/servers/fake-server.mjs test/fixtures/servers/docs.json
+          test $? -eq 1
 
   node22:
     # engines says >=22.13 (Node 20 is end-of-life, and pnpm 11 needs 22.13): the tests run on the

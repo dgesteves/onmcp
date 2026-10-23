@@ -30,6 +30,35 @@ describe('onmcp check', () => {
     expect(stdout).toContain('✖ 1 problem (1 error, 0 warnings) in 2 tools');
   });
 
+  test('starts the server after -- and checks what it lists', async () => {
+    const server = new URL('fixtures/servers/', import.meta.url).pathname;
+    const { code, stdout } = await cli(
+      'check',
+      '--',
+      process.execPath,
+      `${server}fake-server.mjs`,
+      `${server}docs.json`,
+    );
+    expect(code).toBe(EXIT.problems);
+    expect(stdout).toContain('  tool sync\n  ✖ tool-description');
+    expect(stdout).toMatch(/in 3 tools, 1 prompt, 1 resource\n$/);
+  });
+
+  test('passes options after -- to the server, not to onmcp', async () => {
+    const { code, stderr } = await cli(
+      'check',
+      '--timeout',
+      '0.2',
+      '--',
+      'onmcp-no-such-command',
+      '--help',
+    );
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toBe(
+      'onmcp: Couldn’t list what `onmcp-no-such-command --help` has: the command wasn’t found.\n',
+    );
+  });
+
   test('exits 2 when the snapshot can’t be read', async () => {
     const { code, stderr } = await cli('check', fixture('missing.json'));
     expect(code).toBe(EXIT.usage);
@@ -45,10 +74,22 @@ describe('onmcp', () => {
   test('--help prints the usage', async () => {
     const { code, stdout } = await cli('--help');
     expect(code).toBe(EXIT.ok);
-    expect(stdout).toMatch(/^Usage: onmcp check <snapshot.json>/);
+    expect(stdout).toMatch(/^Usage: onmcp check \[options\] -- <command> \[args...\]/);
   });
 
-  test.each([[[]], [['check']], [['check', 'a.json', 'b.json']]])(
+  test('takes a snapshot or a command, not both', async () => {
+    const { code, stderr } = await cli('check', 'a.json', '--', 'node', 'server.js');
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toMatch(/^Give a snapshot or a command after --, not both\./);
+  });
+
+  test.each(['0', '-1', 'soon'])('rejects --timeout %s', async (timeout) => {
+    const { code, stderr } = await cli('check', `--timeout=${timeout}`, 'a.json');
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toBe(`--timeout takes a number of seconds, not "${timeout}".\n`);
+  });
+
+  test.each([[[]], [['check']], [['check', 'a.json', 'b.json']], [['check', '--']]])(
     'prints the usage and exits 2 for %j',
     async (argv) => {
       const { code, stderr } = await cli(...argv);
