@@ -1,0 +1,10 @@
+{
+  "tools": [
+    {
+      "name": "search",
+      "description": "Searches the docs.",
+      "inputSchema": { "type": "object" }
+    },
+    { "name": "sync", "inputSchema": { "type": "object" } }
+  ]
+}
