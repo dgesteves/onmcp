@@ -1,4 +1,5 @@
 import type { Rule } from '../types.js';
+import { words } from '../util/words.js';
 
 // Words that, in a tool's name, say it deletes or overwrites something. "del" isn't one: it's a
 // word in Spanish and Portuguese names, such as precio_del_producto.
@@ -61,12 +62,3 @@ export const toolAnnotations: Rule = {
     }
   },
 };
-
-// The words of a name in any case: delete_file, deleteFile, files.delete and HTTPDelete.
-function words(name: string): string[] {
-  return name
-    .replace(/([a-z\d])([A-Z])/g, '$1 $2')
-    .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
-    .toLowerCase()
-    .split(/[^a-z\d]+/);
-}

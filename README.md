@@ -84,6 +84,7 @@ onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") 
 | [`tool-description`](docs/rules/tool-description.md)       | error   | Every tool has a description.                                                                                   |
 | [`tool-name`](docs/rules/tool-name.md)                     | error   | Tool names use only the characters MCP allows, and at most 128 of them.                                         |
 | [`unique-names`](docs/rules/unique-names.md)               | error   | No two tools or prompts share a name, and no two resources share a URI.                                         |
+| [`similar-names`](docs/rules/similar-names.md)             | warning | No two tool names differ only in case, separators, a plural or a version, such as get_user and get_users.       |
 | [`schema-object`](docs/rules/schema-object.md)             | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
 | [`required-properties`](docs/rules/required-properties.md) | error   | required names only properties the schema has, at every depth.                                                  |
 | [`param-description`](docs/rules/param-description.md)     | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
@@ -123,7 +124,6 @@ onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you
 
 - OAuth sign-in for HTTP servers
 - SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
-- Rules for tool annotations, and names a model mixes up
 - An MCP server, so the agent writing your server can check it as it goes
 
 ## More from @dgesteves
