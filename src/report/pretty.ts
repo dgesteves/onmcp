@@ -1,7 +1,8 @@
 import { styleText } from 'node:util';
 
 import type { LintResult } from '../lint.js';
-import type { Problem, Snapshot, Target } from '../types.js';
+import type { Problem, Snapshot } from '../types.js';
+import { label } from './target.js';
 
 export interface PrettyOptions {
   /** ANSI colors: the CLI turns them on for a terminal that isn't NO_COLOR. */
@@ -23,7 +24,7 @@ export function formatPretty(
   const groups = new Map<string, Problem[]>();
   for (const key of order(snapshot)) groups.set(key, []);
   for (const problem of result.problems) {
-    const key = keyOf(problem.target);
+    const key = label(problem.target);
     groups.set(key, [...(groups.get(key) ?? []), problem]);
   }
 
@@ -46,17 +47,6 @@ export function formatPretty(
   const symbol = result.errorCount > 0 ? style('red', '✖') : style('yellow', '⚠');
   lines.push('', `${symbol} ${plural(total, 'problem')} (${counts}) in ${checked}`);
   return `${lines.join('\n')}\n`;
-}
-
-function keyOf(target: Target): string {
-  switch (target.kind) {
-    case 'server':
-      return 'server';
-    case 'resource':
-      return `resource ${target.uri}`;
-    default:
-      return `${target.kind} ${target.name}`;
-  }
 }
 
 // The server, then each tool, prompt and resource in the order the server lists them.
