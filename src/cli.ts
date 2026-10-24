@@ -13,6 +13,7 @@ import { formatPretty } from './report/pretty.js';
 import { formatSarif } from './report/sarif.js';
 import { rules } from './rules/index.js';
 import type { Config } from './types.js';
+import { printable } from './util/printable.js';
 import { VERSION } from './version.js';
 
 export interface Io {
@@ -169,7 +170,8 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
     }
     return result.errorCount > 0 ? EXIT.problems : EXIT.ok;
   } catch (error) {
-    io.stderr(`onmcp: ${(error as Error).message}\n`);
+    // An error can quote the server: its stderr, or the message it answered with.
+    io.stderr(`onmcp: ${printable((error as Error).message, { lines: true })}\n`);
     return EXIT.usage;
   }
 }
