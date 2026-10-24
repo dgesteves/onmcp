@@ -13,7 +13,7 @@ A poisoned tool rarely does the harm itself. It tells the model to read a file t
 }
 ```
 
-The rule finds these paths in every string of each tool, prompt and resource, and in the server's instructions:
+The rule finds these paths in every string of each tool, prompt, resource and resource template, and in the server's instructions:
 
 | What                | Paths                                                                                 |
 | ------------------- | ------------------------------------------------------------------------------------- |

@@ -12,7 +12,7 @@ A model reads every character of a tool's definition. A person reviewing it, in 
 
 A server that hasn't been tampered with can carry them too, pasted in from a web page or a document. Nothing a tool says needs them.
 
-The rule looks at every string in each tool, prompt and resource, object keys too (a property's name is text the model reads), and at the server's name and instructions.
+The rule looks at every string in each tool, prompt, resource and resource template, object keys too (a property's name is text the model reads), and at the server's name and instructions.
 
 ## What passes
 

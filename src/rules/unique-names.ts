@@ -4,11 +4,13 @@ const CONSEQUENCE = 'a host keeps one of them, and the model can’t reach the o
 
 /**
  * Two tools with one name: a host keeps one of them (which one depends on the host), and the
- * model can't reach the other. The same goes for prompts, and for resources with one URI.
+ * model can't reach the other. The same goes for prompts, and for resources with one URI. Two
+ * templates with one URI template both fit every URI that fits it: reading one reads only one.
  */
 export const uniqueNames: Rule = {
   name: 'unique-names',
-  description: 'No two tools or prompts share a name, and no two resources share a URI.',
+  description:
+    'No two tools or prompts share a name, and no two resources or resource templates share a URI.',
   severity: 'error',
   check({ snapshot, report }) {
     for (const [tool, first] of repeats(snapshot.tools, (tool) => tool.name)) {
@@ -30,6 +32,18 @@ export const uniqueNames: Rule = {
         target: { kind: 'resource', uri: resource.uri, path: 'uri' },
         message: `Resource ${first + 1} has this URI too: ${CONSEQUENCE}`,
         fix: 'Give each resource its own URI.',
+      });
+    }
+    const templates = repeats(snapshot.resourceTemplates, (template) => template.uriTemplate);
+    for (const [template, first] of templates) {
+      report({
+        target: {
+          kind: 'resource-template',
+          uriTemplate: template.uriTemplate,
+          path: 'uriTemplate',
+        },
+        message: `Template ${first + 1} has this URI template too: a URI that fits it reads one of them, and the other can’t be read at all.`,
+        fix: 'Give each template its own URI template.',
       });
     }
   },

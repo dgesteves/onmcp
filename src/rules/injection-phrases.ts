@@ -81,6 +81,10 @@ export const injectionPhrases: Rule = {
     for (const resource of snapshot.resources) {
       scan((path) => ({ kind: 'resource', uri: resource.uri, path }), resource);
     }
+    for (const template of snapshot.resourceTemplates) {
+      const { uriTemplate } = template;
+      scan((path) => ({ kind: 'resource-template', uriTemplate, path }), template);
+    }
   },
 };
 
