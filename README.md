@@ -63,10 +63,17 @@ onmcp check tools.json
 | Option                       | What it does                                                      |
 | ---------------------------- | ----------------------------------------------------------------- |
 | `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one) |
+| `-f, --format <format>`      | `pretty`, for a person (default), or `json`, for a script         |
 | `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one      |
 | `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)    |
 
 onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
+
+`--format json` prints one object, for a script or a CI step: onmcp's version, the server's info, how many tools, prompts and resources it checked, the counts, and each problem with its rule, severity, target, message and fix.
+
+```sh
+onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") | .message'
+```
 
 ## Rules
 
@@ -111,7 +118,7 @@ onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you
 ## Planned
 
 - OAuth sign-in for HTTP servers
-- JSON, SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
+- SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
 - Rules for context budgets, tool annotations, and names a model mixes up
 - An MCP server, so the agent writing your server can check it as it goes
 
