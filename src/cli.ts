@@ -46,11 +46,14 @@ Options:
   -f, --format <format>       pretty, for a person (default), json, for a script, sarif, for
                               code scanning, or github, for annotations in GitHub Actions
   -H, --header <name: value>  Sent with each request to a <url>; repeat it for more than one
+  --max-warnings <n>          Exit 1 with more than n warnings too, so 0 fails on any warning
+                              (default: no limit)
   --timeout <seconds>         How long the server has to answer each request (default: 30)
   -h, --help                  Show this help
   -v, --version               Show the version
 
-Exits 0 with no errors, 1 with errors, and 2 when it couldn't run.
+Exits 0 with no errors, 1 with errors (or more warnings than --max-warnings), and 2 when it
+couldn't run.
 `;
 
 /** Runs the CLI on its arguments (without node and the script) and returns the exit code. */
@@ -69,6 +72,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
         config: { type: 'string', short: 'c' },
         format: { type: 'string', short: 'f', default: 'pretty' },
         header: { type: 'string', short: 'H', multiple: true },
+        'max-warnings': { type: 'string' },
         timeout: { type: 'string' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
@@ -128,6 +132,12 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
     io.stderr(`--timeout takes a number of seconds, not "${values.timeout ?? ''}".\n`);
     return EXIT.usage;
   }
+  const limit = values['max-warnings'];
+  if (limit !== undefined && !/^\d+$/.test(limit)) {
+    io.stderr(`--max-warnings takes a whole number of warnings, such as 0, not "${limit}".\n`);
+    return EXIT.usage;
+  }
+  const maxWarnings = limit === undefined ? Infinity : Number(limit);
   const { format } = values;
   if (format !== 'pretty' && format !== 'json' && format !== 'sarif' && format !== 'github') {
     io.stderr(`--format takes pretty, json, sarif or github, not "${format}".\n`);
@@ -168,7 +178,13 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
         io.stdout(formatGithub(result, source && { file: source }));
         break;
     }
-    return result.errorCount > 0 ? EXIT.problems : EXIT.ok;
+    // On stderr, so a json, sarif or github report on stdout stays one a program can read.
+    const tooMany = result.warningCount > maxWarnings;
+    if (tooMany) {
+      const count = `${result.warningCount} warning${result.warningCount === 1 ? '' : 's'}`;
+      io.stderr(`onmcp: ${count}, more than the ${maxWarnings} --max-warnings allows.\n`);
+    }
+    return result.errorCount > 0 || tooMany ? EXIT.problems : EXIT.ok;
   } catch (error) {
     // An error can quote the server: its stderr, or the message it answered with.
     io.stderr(`onmcp: ${printable((error as Error).message, { lines: true })}\n`);

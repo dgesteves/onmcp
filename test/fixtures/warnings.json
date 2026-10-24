@@ -1,0 +1,12 @@
+{
+  "tools": [
+    {
+      "name": "search",
+      "description": "Searches the docs and returns the best matching pages.",
+      "inputSchema": {
+        "type": "object",
+        "properties": { "q": { "type": "string" }, "limit": { "type": "integer" } }
+      }
+    }
+  ]
+}
