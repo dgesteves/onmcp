@@ -1,6 +1,6 @@
 # onmcp
 
-**Keeps your MCP server agent-friendly:** checks the tools, prompts and resources your server lists the way a model reads them, and catches names that don't parse, schemas a model can't fill in, arguments it has to guess, and text that hides or gives orders to the model, with the fix. Run it on a running server or on a saved `tools/list`.
+**Keeps your MCP server agent-friendly:** checks the tools, prompts and resources your server lists the way a model reads them, and catches names that don't parse, schemas a model can't fill in, arguments it has to guess, and text that hides or gives orders to the model, with the fix. Run it on a server over stdio or HTTP, or on a saved `tools/list`.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/dgesteves/onmcp/ci.yml?branch=main&style=flat-square&label=CI&labelColor=0d0f12)](https://github.com/dgesteves/onmcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/dgesteves/onmcp?style=flat-square&labelColor=0d0f12&color=0e7490)](LICENSE)
@@ -46,17 +46,25 @@ onmcp check -- npx -y @modelcontextprotocol/server-everything
 onmcp check -- node ./dist/server.js --read-only
 ```
 
+Or a server over Streamable HTTP, at its endpoint. `--header` sends a token, or any other header, with each request:
+
+```sh
+onmcp check https://mcp.deepwiki.com/mcp
+onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
+```
+
 Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Inspector log, a bare array of tools, or `{ server, instructions, tools, prompts, resources }`:
 
 ```sh
 onmcp check tools.json
 ```
 
-| Option                | What it does                                                   |
-| --------------------- | -------------------------------------------------------------- |
-| `--timeout <seconds>` | How long the server has to answer each request (default: `30`) |
+| Option                       | What it does                                                   |
+| ---------------------------- | -------------------------------------------------------------- |
+| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one   |
+| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`) |
 
-onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start.
+onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
 
 ## Rules
 
@@ -80,7 +88,7 @@ Each rule's page says why it matters, with examples and the fix.
 
 ## Planned
 
-- Streamable HTTP servers: `onmcp check https://example.com/mcp`
+- Servers on the older HTTP+SSE transport, and OAuth sign-in for HTTP servers
 - A config file, to turn rules off or change their options
 - JSON, SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
 - Rules for context budgets, tool annotations, and names a model mixes up
