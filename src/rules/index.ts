@@ -1,4 +1,5 @@
 import type { Rule } from '../types.js';
+import { contextBudget } from './context-budget.js';
 import { descriptionBudget } from './description-budget.js';
 import { hiddenCharacters } from './hidden-characters.js';
 import { injectionPhrases } from './injection-phrases.js';
@@ -19,6 +20,7 @@ export const rules: readonly Rule[] = [
   requiredProperties,
   paramDescription,
   descriptionBudget,
+  contextBudget,
   hiddenCharacters,
   injectionPhrases,
   sensitivePaths,
