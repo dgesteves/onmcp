@@ -48,6 +48,35 @@ test('reports each resource with none, in the order the server lists them', () =
   ]);
 });
 
+test('reports a resource template with no description, or an empty one', () => {
+  const problems = run(resourceDescription, {
+    resourceTemplates: [
+      { uriTemplate: 'git://log/{ref}', name: 'log', description: 'Commits on a branch, by name.' },
+      { uriTemplate: 'file:///{path}', name: 'file' },
+      { uriTemplate: 'git://diff/{base}...{head}', name: 'diff', description: ' ' },
+    ],
+  });
+  expect(problems).toEqual([
+    {
+      rule: 'resource-description',
+      severity: 'warning',
+      target: { kind: 'resource-template', uriTemplate: 'file:///{path}', path: 'description' },
+      message:
+        'The template has no description: whoever reads it fills in its variables from their names alone.',
+      fix: 'Say what it reads and what goes in each variable, with an example URI.',
+    },
+    expect.objectContaining({
+      target: {
+        kind: 'resource-template',
+        uriTemplate: 'git://diff/{base}...{head}',
+        path: 'description',
+      },
+      message:
+        'The description is empty: whoever reads it fills in its variables from their names alone.',
+    }),
+  ]);
+});
+
 test('doesn’t check tools or prompts', () => {
   expect(
     run(resourceDescription, {

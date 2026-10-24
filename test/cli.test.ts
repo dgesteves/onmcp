@@ -67,8 +67,14 @@ describe('onmcp check', () => {
       fixture('servers/fake-server.mjs'),
       fixture('servers/files.json'),
     );
+    // Its diff template has no description: a warning, so it still passes.
     expect(code).toBe(EXIT.ok);
-    expect(stdout).toBe('✔ No problems in 0 tools, 1 resource, 3 resource templates\n');
+    expect(stdout).toContain(
+      '  resource template git://diff/{base}...{head}\n  ⚠ resource-description  The template has no description',
+    );
+    expect(stdout).toMatch(
+      /\(0 errors, 1 warning\) in 0 tools, 1 resource, 3 resource templates\n$/,
+    );
   });
 
   test('checks the server at a URL, with each --header', async () => {

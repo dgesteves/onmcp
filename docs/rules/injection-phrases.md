@@ -21,7 +21,7 @@ The rule finds three kinds of phrase:
 | Concealment | "do not / don't / never tell / inform / mention / reveal … the user", "without telling / informing the user", "the user must not know", "keep this secret from" |
 | Markup      | `<IMPORTANT>`, `<SYSTEM>`, `<ADMIN>`, `<SECRET>`, `[SYSTEM]`, `[INST]`, chat-template tokens such as `<\|im_start\|>`                                           |
 
-It matches on lowercase text with zero-width, bidi and tag characters taken out and whitespace collapsed, so `IG<U+200B>NORE\n previous instructions` matches too. It looks in every string of each tool, prompt and resource (argument descriptions and enum values too) and in the server's instructions.
+It matches on lowercase text with zero-width, bidi and tag characters taken out and whitespace collapsed, so `IG<U+200B>NORE\n previous instructions` matches too. It looks in every string of each tool, prompt, resource and resource template (argument descriptions and enum values too) and in the server's instructions.
 
 Honest descriptions give the model directions too, and pass: "Call it before `get_page`", "IMPORTANT: the query must be under 200 characters", "Don't show raw IDs to the user". What they don't do is tell the model to drop what it was told, or to keep things from the user.
 

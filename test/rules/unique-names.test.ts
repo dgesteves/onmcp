@@ -49,6 +49,26 @@ test('reports resources with the same URI, and not with the same name', () => {
   ]);
 });
 
+test('reports templates with the same URI template', () => {
+  const problems = run(uniqueNames, {
+    resources: [{ uri: 'docs://{page}', name: 'page' }],
+    resourceTemplates: [
+      { uriTemplate: 'docs://{page}', name: 'page' },
+      { uriTemplate: 'docs://{section}/{page}', name: 'section' },
+      { uriTemplate: 'docs://{page}', name: 'guide' },
+    ],
+  });
+  // A resource whose URI is a template's text is a different thing, read by its exact URI.
+  expect(problems).toEqual([
+    expect.objectContaining({
+      target: { kind: 'resource-template', uriTemplate: 'docs://{page}', path: 'uriTemplate' },
+      message:
+        'Template 1 has this URI template too: a URI that fits it reads one of them, and the other can’t be read at all.',
+      fix: 'Give each template its own URI template.',
+    }),
+  ]);
+});
+
 test('a tool and a prompt may share a name', () => {
   expect(
     run(uniqueNames, { tools: [tool('summarize')], prompts: [{ name: 'summarize' }] }),

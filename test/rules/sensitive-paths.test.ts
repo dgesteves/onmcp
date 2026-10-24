@@ -64,7 +64,7 @@ test('lists each path once', () => {
   expect(found('Reads ~/.npmrc, then .env and .npmrc again.')).toBe('~/.npmrc, .env');
 });
 
-test('looks in arguments, instructions, prompts and resources', () => {
+test('looks in arguments, instructions, prompts, resources and templates', () => {
   const problems = run(sensitivePaths, {
     instructions: 'Read mcp.json at startup.',
     tools: [
@@ -78,10 +78,16 @@ test('looks in arguments, instructions, prompts and resources', () => {
       },
     ],
     resources: [{ uri: 'file:///home/me/.aws/credentials', name: 'aws' }],
+    resourceTemplates: [{ uriTemplate: 'file:///home/{user}/.ssh/{key}', name: 'key' }],
   });
   expect(problems.map((problem) => problem.target)).toEqual([
     { kind: 'server', path: 'instructions' },
     { kind: 'tool', name: 'add', path: 'inputSchema.properties.note.description' },
     { kind: 'resource', uri: 'file:///home/me/.aws/credentials', path: 'uri' },
+    {
+      kind: 'resource-template',
+      uriTemplate: 'file:///home/{user}/.ssh/{key}',
+      path: 'uriTemplate',
+    },
   ]);
 });
