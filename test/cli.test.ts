@@ -59,6 +59,18 @@ describe('onmcp check', () => {
     expect(stdout).toMatch(/in 3 tools, 1 prompt, 1 resource\n$/);
   });
 
+  test('checks a server’s resource templates', async () => {
+    const { code, stdout } = await cli(
+      'check',
+      '--',
+      process.execPath,
+      fixture('servers/fake-server.mjs'),
+      fixture('servers/files.json'),
+    );
+    expect(code).toBe(EXIT.ok);
+    expect(stdout).toBe('✔ No problems in 0 tools, 1 resource, 3 resource templates\n');
+  });
+
   test('checks the server at a URL, with each --header', async () => {
     const { server } = fakeHttpServer(listing, { token: 'secret' });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));

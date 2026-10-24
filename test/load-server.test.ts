@@ -1,6 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -23,6 +25,41 @@ describe('readStdioServer', () => {
     expect(snapshot.tools.map((tool) => tool.name)).toEqual(['search_docs', 'get_page', 'sync']);
     expect(snapshot.prompts.map((prompt) => prompt.name)).toEqual(['summarize']);
     expect(snapshot.resources.map((resource) => resource.uri)).toEqual(['docs://index']);
+    // It has resources, and answers resources/templates/list with "method not found".
+    expect(snapshot.resourceTemplates).toEqual([]);
+  });
+
+  test('lists every page of the resource templates', async () => {
+    const snapshot = await readStdioServer({
+      command: process.execPath,
+      args: [fixture('fake-server.mjs'), fixture('files.json')],
+    });
+    // Three templates in pages of two.
+    expect(snapshot.resourceTemplates.map((template) => template.uriTemplate)).toEqual([
+      'file:///{path}',
+      'git://log/{ref}',
+      'git://diff/{base}...{head}',
+    ]);
+    expect(snapshot.resourceTemplates[0]).toEqual({
+      uriTemplate: 'file:///{path}',
+      name: 'file',
+      description: 'A file in the project, by its path from the root.',
+      mimeType: 'application/octet-stream',
+    });
+  });
+
+  test('fails on any other error from resources/templates/list', async () => {
+    const listing = join(mkdtempSync(join(tmpdir(), 'onmcp-')), 'broken.json');
+    writeFileSync(
+      listing,
+      JSON.stringify({
+        capabilities: { resources: {} },
+        templatesError: { code: -32603, message: 'The template index isn’t built' },
+      }),
+    );
+    await expect(
+      readStdioServer({ command: process.execPath, args: [fixture('fake-server.mjs'), listing] }),
+    ).rejects.toThrow(/The template index isn’t built/);
   });
 
   test('says when the command isn’t found', async () => {

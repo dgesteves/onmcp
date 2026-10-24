@@ -53,6 +53,14 @@ const resource = z.looseObject({
   mimeType: z.string().optional(),
 });
 
+const resourceTemplate = z.looseObject({
+  uriTemplate: z.string(),
+  name: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  mimeType: z.string().optional(),
+});
+
 const server = z.looseObject({
   name: z.string(),
   version: z.string(),
@@ -67,13 +75,14 @@ const snapshot = z.looseObject({
   tools: z.array(tool).default([]),
   prompts: z.array(prompt).default([]),
   resources: z.array(resource).default([]),
+  resourceTemplates: z.array(resourceTemplate).default([]),
 });
 
 /**
  * Reads a snapshot from parsed JSON, in any of the shapes people save one in: onmcp's own
- * (`{ server, instructions, tools, prompts, resources }`), the result of `tools/list` (or of
- * `prompts/list` or `resources/list`), a JSON-RPC response that holds one, as an Inspector log
- * shows it, or a bare array of tools.
+ * (`{ server, instructions, tools, prompts, resources, resourceTemplates }`), the result of
+ * `tools/list` (or of `prompts/list`, `resources/list` or `resources/templates/list`), a JSON-RPC
+ * response that holds one, as an Inspector log shows it, or a bare array of tools.
  */
 export function parseSnapshot(json: unknown): Snapshot {
   let value = json;
@@ -88,7 +97,8 @@ export function parseSnapshot(json: unknown): Snapshot {
     );
     throw new SnapshotError(`Not a snapshot MCP would send:\n${issues.join('\n')}`);
   }
-  const { server, serverInfo, instructions, tools, prompts, resources } = parsed.data;
+  const { server, serverInfo, instructions, tools, prompts, resources, resourceTemplates } =
+    parsed.data;
   const info = server ?? serverInfo;
   return {
     ...(info && { server: info }),
@@ -96,6 +106,7 @@ export function parseSnapshot(json: unknown): Snapshot {
     tools,
     prompts,
     resources,
+    resourceTemplates,
   };
 }
 

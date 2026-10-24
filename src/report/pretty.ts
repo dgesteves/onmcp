@@ -11,8 +11,8 @@ export interface PrettyOptions {
 }
 
 /**
- * Formats a lint result for a person in a terminal: the problems grouped under the tool, prompt
- * or resource they're on, in the order the server lists them, each with its fix, then a count.
+ * Formats a lint result for a person in a terminal: the problems grouped under the tool, prompt,
+ * resource or template they're on, in the order the server lists them, each with its fix, then a count.
  */
 export function formatPretty(
   result: LintResult,
@@ -54,21 +54,24 @@ export function formatPretty(
   return `${lines.join('\n')}\n`;
 }
 
-// The server, then each tool, prompt and resource in the order the server lists them.
+// The server, then each tool, prompt, resource and template in the order the server lists them.
 function order(snapshot: Snapshot): string[] {
   return [
     'server',
     ...snapshot.tools.map((tool) => `tool ${tool.name}`),
     ...snapshot.prompts.map((prompt) => `prompt ${prompt.name}`),
     ...snapshot.resources.map((resource) => `resource ${resource.uri}`),
+    ...snapshot.resourceTemplates.map((template) => `resource template ${template.uriTemplate}`),
   ];
 }
 
 function describeChecked(snapshot: Snapshot): string {
+  const { prompts, resources, resourceTemplates } = snapshot;
   const parts = [
     plural(snapshot.tools.length, 'tool'),
-    ...(snapshot.prompts.length ? [plural(snapshot.prompts.length, 'prompt')] : []),
-    ...(snapshot.resources.length ? [plural(snapshot.resources.length, 'resource')] : []),
+    ...(prompts.length ? [plural(prompts.length, 'prompt')] : []),
+    ...(resources.length ? [plural(resources.length, 'resource')] : []),
+    ...(resourceTemplates.length ? [plural(resourceTemplates.length, 'resource template')] : []),
   ];
   return parts.join(', ');
 }

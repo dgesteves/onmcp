@@ -3,7 +3,7 @@ import type { Config, Problem, Rule, Snapshot } from '../src/types.js';
 
 /** A snapshot with nothing in it but what the test gives. */
 export function snapshotOf(partial: Partial<Snapshot>): Snapshot {
-  return { tools: [], prompts: [], resources: [], ...partial };
+  return { tools: [], prompts: [], resources: [], resourceTemplates: [], ...partial };
 }
 
 /** The problems one rule reports on a snapshot, with the options the test gives it. */

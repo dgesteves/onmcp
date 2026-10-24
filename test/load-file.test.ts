@@ -20,11 +20,24 @@ describe('parseSnapshot', () => {
       tools: [tool],
       prompts: [{ name: 'summarize', arguments: [{ name: 'path', required: true }] }],
       resources: [{ uri: 'docs://index', name: 'index', mimeType: 'text/markdown' }],
+      resourceTemplates: [],
     });
   });
 
   test('reads a tools/list result, with no prompts or resources', () => {
-    expect(parseSnapshot({ tools: [tool] })).toEqual({ tools: [tool], prompts: [], resources: [] });
+    expect(parseSnapshot({ tools: [tool] })).toEqual({
+      tools: [tool],
+      prompts: [],
+      resources: [],
+      resourceTemplates: [],
+    });
+  });
+
+  test('reads a resources/templates/list result, in a JSON-RPC response', () => {
+    const template = { uriTemplate: 'file:///{path}', name: 'file' };
+    expect(
+      parseSnapshot({ jsonrpc: '2.0', id: 4, result: { resourceTemplates: [template] } }),
+    ).toEqual({ tools: [], prompts: [], resources: [], resourceTemplates: [template] });
   });
 
   test('reads a bare array of tools', () => {

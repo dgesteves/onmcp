@@ -3,6 +3,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   Client,
+  METHOD_NOT_FOUND,
+  ProtocolError,
   SdkError,
   SdkErrorCode,
   SdkHttpError,
@@ -42,7 +44,7 @@ const STDERR_TAIL = 4_000;
 
 /**
  * Lists what a client sees from a connected server: its info and instructions from initialize,
- * then every page of the tools, prompts and resources it says it has.
+ * then every page of the tools, prompts, resources and resource templates it says it has.
  */
 export async function snapshotFromClient(
   client: Client,
@@ -50,10 +52,16 @@ export async function snapshotFromClient(
 ): Promise<Snapshot> {
   const capabilities = client.getServerCapabilities() ?? {};
   const options = { timeout: timeoutMs };
-  const [tools, prompts, resources] = await Promise.all([
+  const [tools, prompts, resources, resourceTemplates] = await Promise.all([
     capabilities.tools ? client.listTools(undefined, options).then((r) => r.tools) : [],
     capabilities.prompts ? client.listPrompts(undefined, options).then((r) => r.prompts) : [],
     capabilities.resources ? client.listResources(undefined, options).then((r) => r.resources) : [],
+    capabilities.resources
+      ? client
+          .listResourceTemplates(undefined, options)
+          .then((r) => r.resourceTemplates)
+          .catch(noTemplates)
+      : [],
   ]);
   const info = client.getServerVersion();
   return parseSnapshot({
@@ -68,7 +76,15 @@ export async function snapshotFromClient(
     tools,
     prompts,
     resources,
+    resourceTemplates,
   });
+}
+
+// Many servers with resources have no templates, and no handler for resources/templates/list:
+// "method not found" from one means it has none, not that it failed.
+function noTemplates(error: unknown): [] {
+  if (error instanceof ProtocolError && error.code === METHOD_NOT_FOUND) return [];
+  throw error;
 }
 
 /** Starts a server over stdio, lists what it has, and stops it. */

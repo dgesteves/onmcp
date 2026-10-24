@@ -1,6 +1,6 @@
 // A stdio MCP server for the tests, written by hand so they control every byte it sends. It lists
 // what the JSON file in argv[2] holds ({ serverInfo, instructions, capabilities, tools, prompts,
-// resources }), in pages of two. --crash writes to stderr and exits before it answers, and
+// resources, resourceTemplates }), in pages of two. --crash writes to stderr and exits before it answers, and
 // --silent never answers.
 import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';

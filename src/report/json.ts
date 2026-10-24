@@ -8,7 +8,7 @@ export interface JsonReport {
   onmcp: string;
   server?: Snapshot['server'];
   /** How many of each the server lists: the problems are on these. */
-  checked: { tools: number; prompts: number; resources: number };
+  checked: { tools: number; prompts: number; resources: number; resourceTemplates: number };
   errorCount: number;
   warningCount: number;
   /** In rule order, as lint() returns them. */
@@ -24,6 +24,7 @@ export function formatJson(result: LintResult, snapshot: Snapshot): string {
       tools: snapshot.tools.length,
       prompts: snapshot.prompts.length,
       resources: snapshot.resources.length,
+      resourceTemplates: snapshot.resourceTemplates.length,
     },
     errorCount: result.errorCount,
     warningCount: result.warningCount,

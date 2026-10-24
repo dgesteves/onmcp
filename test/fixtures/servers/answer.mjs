@@ -25,5 +25,14 @@ export function answer(listing, method, params) {
       return { result: { [kind]: items, ...(nextCursor && { nextCursor }) } };
     }
   }
+  // The error in templatesError, or the templates when the file has them: like many servers with
+  // resources, it has no handler otherwise.
+  if (method === 'resources/templates/list' && listing.templatesError) {
+    return { error: listing.templatesError };
+  }
+  if (method === 'resources/templates/list' && listing.resourceTemplates) {
+    const { items, nextCursor } = page(listing.resourceTemplates, params?.cursor);
+    return { result: { resourceTemplates: items, ...(nextCursor && { nextCursor }) } };
+  }
   return { error: { code: -32601, message: `Method not found: ${method}` } };
 }

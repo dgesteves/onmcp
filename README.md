@@ -54,7 +54,7 @@ onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
 onmcp check http://localhost:3001/sse
 ```
 
-Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Inspector log, a bare array of tools, or `{ server, instructions, tools, prompts, resources }`:
+Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Inspector log, a bare array of tools, or `{ server, instructions, tools, prompts, resources, resourceTemplates }`:
 
 ```sh
 onmcp check tools.json
@@ -69,7 +69,7 @@ onmcp check tools.json
 
 onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
 
-`--format json` prints one object, for a script or a CI step: onmcp's version, the server's info, how many tools, prompts and resources it checked, the counts, and each problem with its rule, severity, target, message and fix.
+`--format json` prints one object, for a script or a CI step: onmcp's version, the server's info, how many tools, prompts, resources and resource templates it checked, the counts, and each problem with its rule, severity, target, message and fix.
 
 ```sh
 onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") | .message'
@@ -138,7 +138,7 @@ onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you
 
 ## Planned
 
-- Resource templates: onmcp reads `resources/list`, and not yet `resources/templates/list`
+- Rules for resource templates: onmcp lists them, and the rules don't read them yet
 - OAuth sign-in for HTTP servers
 - A GitHub Action that checks the server on every pull request, once onmcp is on npm
 - An MCP server, so the agent writing your server can check it as it goes

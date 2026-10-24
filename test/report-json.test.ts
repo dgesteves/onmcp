@@ -23,7 +23,7 @@ test('prints the counts and every problem, with what was checked, as one object'
   expect(JSON.parse(output)).toEqual({
     onmcp: VERSION,
     server: { name: 'docs', version: '2.1.0' },
-    checked: { tools: 1, prompts: 1, resources: 0 },
+    checked: { tools: 1, prompts: 1, resources: 0, resourceTemplates: 0 },
     errorCount: 1,
     warningCount: 0,
     problems: [problem],

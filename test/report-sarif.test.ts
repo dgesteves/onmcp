@@ -74,7 +74,7 @@ test('writes each problem as a result, with its fix in the message and where it 
   ]);
 });
 
-test('names the server, prompts and resources in their logical locations', () => {
+test('names the server, prompts, resources and templates in their logical locations', () => {
   const at = (problem: Partial<Problem>, snapshot?: Snapshot) =>
     sarif(result({ ...noDescription, ...problem }), snapshot).run.results[0]?.locations[0]
       ?.logicalLocations[0];
@@ -96,6 +96,13 @@ test('names the server, prompts and resources in their logical locations', () =>
     fullyQualifiedName: 'resource/docs://index/uri',
     kind: 'resource',
   });
+  expect(
+    at({ target: { kind: 'resource-template', uriTemplate: 'file:///{path}', path: 'name' } }),
+  ).toEqual({
+    name: 'file:///{path}',
+    fullyQualifiedName: 'resource-template/file:///{path}/name',
+    kind: 'resource',
+  });
 });
 
 test('leaves out a result’s ruleIndex for a rule it wasn’t given', () => {
@@ -114,7 +121,8 @@ const file = `{
   ],
   "prompts": [{ "name": "sync" }],
   "resources": [{ "uri": "docs://index", "name": "index" }],
-  "instructions": "Search first."
+  "instructions": "Search first.",
+  "resourceTemplates": [{ "uriTemplate": "docs://index", "name": "index" }]
 }
 `;
 
@@ -123,6 +131,7 @@ test.each<[Problem['target'], number]>([
   [{ kind: 'prompt', name: 'sync' }, 9],
   [{ kind: 'resource', uri: 'docs://index' }, 10],
   [{ kind: 'server', path: 'instructions' }, 11],
+  [{ kind: 'resource-template', uriTemplate: 'docs://index' }, 12],
   [{ kind: 'server', path: 'server.name' }, 1],
   [{ kind: 'tool', name: 'missing' }, 1],
 ])('points a result on %j at line %i of the file it was checked from', (target, line) => {
