@@ -2,6 +2,7 @@ import { type CallToolResult, McpServer, type ToolAnnotations } from '@modelcont
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import { z } from 'zod';
 
+import { ruleDocs } from './docs.js';
 import { lint } from './lint.js';
 import { findConfig, loadConfig } from './load/config.js';
 import { parseSnapshot } from './load/file.js';
@@ -24,9 +25,9 @@ export interface ServeOptions {
 }
 
 const INSTRUCTIONS =
-  'onmcp checks an MCP server the way a model reads it. After you change a server’s tools, prompts or resources, call check_server with the command that starts it, or its URL, and fix what it reports. For a listing you already have as JSON, call check_listing.';
+  'onmcp checks an MCP server the way a model reads it. After you change a server’s tools, prompts or resources, call check_server with the command that starts it, or its URL, and fix what it reports. For a listing you already have as JSON, call check_listing. explain_rule says why a rule matters.';
 
-// check_listing only reads what it's given. check_server runs a command, which could do anything.
+// check_listing and explain_rule only read. check_server runs a command, which could do anything.
 const READ_ONLY: ToolAnnotations = { readOnlyHint: true, openWorldHint: false };
 const RUNS_A_COMMAND: ToolAnnotations = {
   readOnlyHint: false,
@@ -168,6 +169,25 @@ export function createServer({ cwd = process.cwd(), config }: ServeOptions = {})
       annotations: READ_ONLY,
     },
     ({ listing }) => check(() => Promise.resolve(parseSnapshot(listing))),
+  );
+
+  const names = rules.map((rule) => rule.name) as [string, ...string[]];
+  server.registerTool(
+    'explain_rule',
+    {
+      title: 'Explain an onmcp rule',
+      description:
+        'Returns the docs for one of onmcp’s rules, in Markdown: why it matters, examples it reports and examples that pass, and how to fix them. Call it when the fix check_server or check_listing gives isn’t enough to go on.',
+      inputSchema: z.object({
+        rule: z
+          .enum(names)
+          .describe(
+            'The rule’s name, as check_server and check_listing report it, such as "param-description".',
+          ),
+      }),
+      annotations: READ_ONLY,
+    },
+    async ({ rule }) => ({ content: [{ type: 'text', text: await ruleDocs(rule) }] }),
   );
 
   return server;

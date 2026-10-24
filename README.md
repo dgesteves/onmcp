@@ -163,8 +163,9 @@ Until the first release, use `node /path/to/onmcp/dist/cli.js serve` in place of
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `check_server`  | Starts a server with `command` and `args`, or connects to one at `url` (with `headers`), and checks what it lists. The command runs in the folder onmcp started in. Its annotations say it isn't read-only, since a command could do anything, so a host that asks before such calls asks before this one. |
 | `check_listing` | Checks a listing given as JSON, such as one from an Inspector log. Read-only.                                                                                                                                                                                                                              |
+| `explain_rule`  | Returns a rule's docs page: why it matters, examples, and the fix. Read-only.                                                                                                                                                                                                                              |
 
-Each returns the problems as the pretty format prints them, and as structured content in the shape `--format json` prints. Both read `onmcp.config.json` from the folder onmcp started in, on every call, or the file `--config` names.
+The check tools return the problems as the pretty format prints them, and as structured content in the shape `--format json` prints. Both read `onmcp.config.json` from the folder onmcp started in, on every call, or the file `--config` names.
 
 ## Planned
 
