@@ -1,3 +1,5 @@
 pnpm-lock.yaml
 dist
 coverage
+# Written by scripts/build-schema.mjs, as JSON.stringify formats it.
+schema.json

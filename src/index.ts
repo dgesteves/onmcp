@@ -1,4 +1,5 @@
 export { ConfigError, lint, type LintResult } from './lint.js';
+export { configSchema } from './load/config.js';
 export { parseSnapshot, readSnapshot, SnapshotError } from './load/file.js';
 export { formatGithub, type GithubOptions } from './report/github.js';
 export { formatJson, type JsonReport } from './report/json.js';

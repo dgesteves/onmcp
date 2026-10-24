@@ -1,0 +1,497 @@
+{
+  "$id": "https://unpkg.com/onmcp/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "onmcp config",
+  "description": "onmcp.config.json: which rules onmcp runs, at what severity, with what options.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "rules": {
+      "description": "Each rule’s setting: \"off\", \"warning\" or \"error\", or [severity, options]. A rule the config leaves out runs at its default severity.",
+      "type": "object",
+      "properties": {
+        "tool-description": {
+          "description": "Every tool has a description. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "tool-name": {
+          "description": "Tool names use only the characters MCP allows, and at most 128 of them. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "param-name": {
+          "description": "Argument names use only ASCII letters, digits, \"_\", \"-\" and \".\", and at most 64 of them. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "unique-names": {
+          "description": "No two tools or prompts share a name, and no two resources or resource templates share a URI. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "similar-names": {
+          "description": "No two tool names differ only in case, separators, a plural or a version, such as get_user and get_users. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "schema-object": {
+          "description": "A tool’s inputSchema and outputSchema have type \"object\", with readable properties. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "required-properties": {
+          "description": "required names only properties the schema has, at every depth. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "schema-values": {
+          "description": "A schema’s enum, const, default and examples fit its type, at every depth. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "param-description": {
+          "description": "Every argument in a tool’s inputSchema has a description, at every depth. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "prompt-description": {
+          "description": "Every prompt, and each of its arguments, has a description. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "resource-description": {
+          "description": "Every resource and resource template has a description. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "description-budget": {
+          "description": "A tool’s description fits in maxTokens (500 by default): a model reads it every turn. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "maxTokens": {
+                      "type": "number",
+                      "default": 500
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "context-budget": {
+          "description": "The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "maxTokens": {
+                      "type": "number",
+                      "default": 10000
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "tool-annotations": {
+          "description": "A tool’s annotations agree with each other, and none says a tool named for deleting is safe. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "hidden-characters": {
+          "description": "No invisible characters in any text a model reads: names, descriptions, schemas. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "injection-phrases": {
+          "description": "No text that tells the model to drop its instructions, hide things from the user, or poses as a system message. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "sensitive-paths": {
+          "description": "No credential or agent config paths, such as ~/.ssh or mcp.json, in what a model reads. Default: warning.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "severity": {
+      "enum": [
+        "warning",
+        "error"
+      ]
+    }
+  }
+}

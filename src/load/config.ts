@@ -65,6 +65,58 @@ export async function loadConfig(
   return config;
 }
 
+/**
+ * The JSON Schema of onmcp.config.json, for editors: each rule by name, with what it catches and
+ * its default severity, and the options it takes. readConfig() and lint() check the same things
+ * when onmcp runs; this lets an editor complete them, and mark a typo before then.
+ */
+export function configSchema(rules: readonly Rule[]): Record<string, unknown> {
+  return {
+    $id: 'https://unpkg.com/onmcp/schema.json',
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'onmcp config',
+    description: `${CONFIG_FILE}: which rules onmcp runs, at what severity, with what options.`,
+    type: 'object',
+    properties: {
+      $schema: { type: 'string' },
+      rules: {
+        description:
+          'Each rule’s setting: "off", "warning" or "error", or [severity, options]. A rule the config leaves out runs at its default severity.',
+        type: 'object',
+        properties: Object.fromEntries(rules.map((rule) => [rule.name, setting(rule)])),
+        additionalProperties: false,
+      },
+    },
+    additionalProperties: false,
+    definitions: { severity: { enum: ['warning', 'error'] } },
+  };
+}
+
+// A rule's setting: off or a severity, or [severity, options] with only the options it takes, each
+// of its default's type.
+function setting(rule: Rule): Record<string, unknown> {
+  const defaults: Record<string, unknown> = { ...rule.defaults };
+  const options = Object.entries(defaults).map(([name, value]): [string, object] => {
+    const type = Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
+    return [name, { type, default: value }];
+  });
+  return {
+    description: `${rule.description} Default: ${rule.severity}.`,
+    anyOf: [
+      { enum: ['off', 'warning', 'error'] },
+      {
+        type: 'array',
+        items: [
+          { $ref: '#/definitions/severity' },
+          { type: 'object', properties: Object.fromEntries(options), additionalProperties: false },
+        ],
+        minItems: 2,
+        maxItems: 2,
+      },
+    ],
+  };
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

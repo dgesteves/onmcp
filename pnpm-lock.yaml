@@ -24,6 +24,9 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      ajv:
+        specifier: ^6.15.0
+        version: 6.15.0
       eslint:
         specifier: ^10.13.0
         version: 10.13.0
