@@ -111,6 +111,37 @@ describe('onmcp check', () => {
     );
   });
 
+  test('passes with warnings alone, up to --max-warnings', async () => {
+    expect((await cli('check', fixture('warnings.json'))).code).toBe(EXIT.ok);
+    const { code, stderr } = await cli('check', '--max-warnings', '2', fixture('warnings.json'));
+    expect(code).toBe(EXIT.ok);
+    expect(stderr).toBe('');
+  });
+
+  test('exits 1 with more warnings than --max-warnings, and says so on stderr', async () => {
+    const { code, stdout, stderr } = await cli(
+      'check',
+      '--max-warnings',
+      '1',
+      fixture('warnings.json'),
+    );
+    expect(code).toBe(EXIT.problems);
+    expect(stdout).toMatch(/⚠ 2 problems \(0 errors, 2 warnings\) in 1 tool\n$/);
+    expect(stderr).toBe('onmcp: 2 warnings, more than the 1 --max-warnings allows.\n');
+  });
+
+  test('keeps --format json readable when it’s over --max-warnings', async () => {
+    const { code, stdout } = await cli(
+      'check',
+      '-f',
+      'json',
+      '--max-warnings=0',
+      fixture('warnings.json'),
+    );
+    expect(code).toBe(EXIT.problems);
+    expect(JSON.parse(stdout)).toMatchObject({ errorCount: 0, warningCount: 2 });
+  });
+
   test('prints JSON with --format json, and exits the same way', async () => {
     const { code, stdout } = await cli('check', '-f', 'json', fixture('undescribed.json'));
     expect(code).toBe(EXIT.problems);
@@ -278,6 +309,14 @@ describe('onmcp', () => {
     const { code, stderr } = await cli('check', `--timeout=${timeout}`, 'a.json');
     expect(code).toBe(EXIT.usage);
     expect(stderr).toBe(`--timeout takes a number of seconds, not "${timeout}".\n`);
+  });
+
+  test.each(['-1', '1.5', 'none', ''])('rejects --max-warnings %j', async (limit) => {
+    const { code, stderr } = await cli('check', `--max-warnings=${limit}`, 'a.json');
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toBe(
+      `--max-warnings takes a whole number of warnings, such as 0, not "${limit}".\n`,
+    );
   });
 
   test.each([[[]], [['check']], [['check', 'a.json', 'b.json']], [['check', '--']]])(

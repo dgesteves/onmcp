@@ -65,9 +65,16 @@ onmcp check tools.json
 | `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one)                                                                  |
 | `-f, --format <format>`      | `pretty`, for a person (default), `json`, for a script, `sarif`, for code scanning, or `github`, for annotations in GitHub Actions |
 | `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one                                                                       |
+| `--max-warnings <n>`         | Exits `1` when there are more than `n` warnings too, so `0` fails on any warning (default: no limit)                               |
 | `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)                                                                     |
 
-onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
+onmcp exits `0` with no errors (warnings alone pass, up to `--max-warnings`), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
+
+In CI, `--max-warnings 0` holds a server to no warnings at all, and a higher number keeps the count from growing while you work it down:
+
+```sh
+onmcp check --max-warnings 0 tools.json
+```
 
 `--format json` prints one object, for a script or a CI step: onmcp's version, the server's info, how many tools, prompts, resources and resource templates it checked, the counts, and each problem with its rule, severity, target, message and fix.
 
