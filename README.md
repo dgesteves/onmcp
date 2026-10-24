@@ -100,6 +100,7 @@ onmcp check -f sarif tools.json > onmcp.sarif
 | [`schema-object`](docs/rules/schema-object.md)             | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
 | [`required-properties`](docs/rules/required-properties.md) | error   | required names only properties the schema has, at every depth.                                                  |
 | [`param-description`](docs/rules/param-description.md)     | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
+| [`prompt-description`](docs/rules/prompt-description.md)   | warning | Every prompt, and each of its arguments, has a description.                                                     |
 | [`description-budget`](docs/rules/description-budget.md)   | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
 | [`context-budget`](docs/rules/context-budget.md)           | warning | The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context.                |
 | [`tool-annotations`](docs/rules/tool-annotations.md)       | error   | A tool’s annotations agree with each other, and none says a tool named for deleting is safe.                    |
