@@ -111,6 +111,7 @@ onmcp check -f sarif tools.json > onmcp.sarif
 | [`param-description`](docs/rules/param-description.md)       | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
 | [`prompt-description`](docs/rules/prompt-description.md)     | warning | Every prompt, and each of its arguments, has a description.                                                     |
 | [`resource-description`](docs/rules/resource-description.md) | warning | Every resource and resource template has a description.                                                         |
+| [`uri-template`](docs/rules/uri-template.md)                 | error   | A resource template’s variables are in {braces}, and each brace closes.                                         |
 | [`description-budget`](docs/rules/description-budget.md)     | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
 | [`context-budget`](docs/rules/context-budget.md)             | warning | The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context.                |
 | [`tool-annotations`](docs/rules/tool-annotations.md)         | error   | A tool’s annotations agree with each other, and none says a tool named for deleting is safe.                    |
