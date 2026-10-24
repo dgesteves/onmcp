@@ -80,10 +80,40 @@ function resolve(
       options !== null &&
       !Array.isArray(options)
     ) {
+      checkOptions(rule, options as Record<string, unknown>);
       return { severity, options: { ...rule.defaults, ...options } };
     }
   }
   throw new ConfigError(
     `The config sets "${rule.name}" to ${JSON.stringify(setting)}: use "off", "warning", "error", or [severity, options].`,
   );
+}
+
+// An option the rule doesn't take, or a value of another type than its default, would change
+// nothing, and the rule would run as if the config didn't set it.
+function checkOptions(rule: Rule, options: Record<string, unknown>): void {
+  const defaults: Record<string, unknown> = { ...rule.defaults };
+  const names = Object.keys(defaults);
+  for (const [name, value] of Object.entries(options)) {
+    if (!Object.hasOwn(defaults, name)) {
+      const meant = closest(name, names);
+      const hint = meant
+        ? `. Did you mean "${meant}"?`
+        : names.length > 0
+          ? `: it takes ${names.map((known) => `"${known}"`).join(', ')}.`
+          : ': it has no options.';
+      throw new ConfigError(`Unknown option "${name}" for "${rule.name}" in the config${hint}`);
+    }
+    const expected = kind(defaults[name]);
+    if (kind(value) !== expected) {
+      throw new ConfigError(
+        `The config sets "${name}" for "${rule.name}" to ${JSON.stringify(value)}: it takes ${/^[aeiou]/.test(expected) ? 'an' : 'a'} ${expected}.`,
+      );
+    }
+  }
+}
+
+function kind(value: unknown): string {
+  if (Array.isArray(value)) return 'array';
+  return value === null ? 'null' : typeof value;
 }
