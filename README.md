@@ -60,12 +60,12 @@ Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Ins
 onmcp check tools.json
 ```
 
-| Option                       | What it does                                                      |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one) |
-| `-f, --format <format>`      | `pretty`, for a person (default), or `json`, for a script         |
-| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one      |
-| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)    |
+| Option                       | What it does                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one)                     |
+| `-f, --format <format>`      | `pretty`, for a person (default), `json`, for a script, or `sarif`, for code scanning |
+| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one                          |
+| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)                        |
 
 onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
 
@@ -73,6 +73,12 @@ onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` w
 
 ```sh
 onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") | .message'
+```
+
+`--format sarif` prints a SARIF 2.1.0 log, the format GitHub code scanning and other CI tools read: each rule with a link to its docs, and each problem with its fix. A server's listing isn't in a source file, so each result names where it is as a logical location, such as `tool/search/inputSchema.properties.q`. When onmcp checks a saved listing, each result also points at the line in the file where its tool, prompt or resource is.
+
+```sh
+onmcp check -f sarif tools.json > onmcp.sarif
 ```
 
 ## Rules
