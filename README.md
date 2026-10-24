@@ -88,6 +88,7 @@ onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") 
 | [`required-properties`](docs/rules/required-properties.md) | error   | required names only properties the schema has, at every depth.                                                  |
 | [`param-description`](docs/rules/param-description.md)     | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
 | [`description-budget`](docs/rules/description-budget.md)   | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
+| [`context-budget`](docs/rules/context-budget.md)           | warning | The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context.                |
 | [`hidden-characters`](docs/rules/hidden-characters.md)     | error   | No invisible characters in any text a model reads: names, descriptions, schemas.                                |
 | [`injection-phrases`](docs/rules/injection-phrases.md)     | error   | No text that tells the model to drop its instructions, hide things from the user, or poses as a system message. |
 | [`sensitive-paths`](docs/rules/sensitive-paths.md)         | warning | No credential or agent config paths, such as ~/.ssh or mcp.json, in what a model reads.                         |
@@ -121,7 +122,7 @@ onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you
 
 - OAuth sign-in for HTTP servers
 - SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
-- Rules for context budgets, tool annotations, and names a model mixes up
+- Rules for tool annotations, and names a model mixes up
 - An MCP server, so the agent writing your server can check it as it goes
 
 ## More from @dgesteves
