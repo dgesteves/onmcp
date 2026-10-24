@@ -309,6 +309,33 @@
             }
           ]
         },
+        "uri-template": {
+          "description": "A resource template’s variables are in {braces}, and each brace closes. Default: error.",
+          "anyOf": [
+            {
+              "enum": [
+                "off",
+                "warning",
+                "error"
+              ]
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "$ref": "#/definitions/severity"
+                },
+                {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": false
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
         "description-budget": {
           "description": "A tool’s description fits in maxTokens (500 by default): a model reads it every turn. Default: warning.",
           "anyOf": [

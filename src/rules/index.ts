@@ -16,6 +16,7 @@ import { toolAnnotations } from './tool-annotations.js';
 import { toolDescription } from './tool-description.js';
 import { toolName } from './tool-name.js';
 import { uniqueNames } from './unique-names.js';
+import { uriTemplate } from './uri-template.js';
 
 /** Every rule onmcp has, in the order it runs them. */
 export const rules: readonly Rule[] = [
@@ -30,6 +31,7 @@ export const rules: readonly Rule[] = [
   paramDescription,
   promptDescription,
   resourceDescription,
+  uriTemplate,
   descriptionBudget,
   contextBudget,
   toolAnnotations,
