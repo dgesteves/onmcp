@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 
 import { EXIT, main } from '../src/cli.js';
 import type { JsonReport } from '../src/report/json.js';
+import type { SarifLog } from '../src/report/sarif.js';
 import { VERSION } from '../src/version.js';
 import { fakeHttpServer } from './fixtures/servers/fake-http-server.mjs';
 
@@ -98,6 +99,47 @@ describe('onmcp check', () => {
     expect(report.problems.map((problem) => problem.rule)).toEqual(['tool-description']);
   });
 
+  test('prints SARIF with --format sarif, pointing at the snapshot from the folder', async () => {
+    const { code, stdout } = await cliIn(
+      fixture(''),
+      'check',
+      '-f',
+      'sarif',
+      fixture('undescribed.json'),
+    );
+    expect(code).toBe(EXIT.problems);
+    const log = JSON.parse(stdout) as SarifLog;
+    expect(log.version).toBe('2.1.0');
+    expect(log.runs[0]?.results).toEqual([
+      expect.objectContaining({
+        ruleId: 'tool-description',
+        level: 'error',
+        locations: [
+          expect.objectContaining({
+            physicalLocation: {
+              artifactLocation: { uri: 'undescribed.json' },
+              region: { startLine: 8 },
+            },
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  test('gives a file outside the folder as a file:// URI', async () => {
+    const { stdout } = await cliIn(
+      fixture('servers'),
+      'check',
+      '-f',
+      'sarif',
+      fixture('undescribed.json'),
+    );
+    const [result] = (JSON.parse(stdout) as SarifLog).runs[0]?.results ?? [];
+    expect(result?.locations[0]?.physicalLocation?.artifactLocation.uri).toBe(
+      `file://${fixture('undescribed.json')}`,
+    );
+  });
+
   test('reads onmcp.config.json from the folder it runs in', async () => {
     const { code, stdout } = await cliIn(fixture('config'), 'check', fixture('undescribed.json'));
     expect(code).toBe(EXIT.ok);
@@ -169,9 +211,9 @@ describe('onmcp', () => {
   );
 
   test('rejects a --format it doesn’t have', async () => {
-    const { code, stderr } = await cli('check', '--format', 'sarif', 'a.json');
+    const { code, stderr } = await cli('check', '--format', 'xml', 'a.json');
     expect(code).toBe(EXIT.usage);
-    expect(stderr).toBe('--format takes pretty or json, not "sarif".\n');
+    expect(stderr).toBe('--format takes pretty, json or sarif, not "xml".\n');
   });
 
   test.each(['0', '-1', 'soon'])('rejects --timeout %s', async (timeout) => {

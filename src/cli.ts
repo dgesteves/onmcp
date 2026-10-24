@@ -1,3 +1,6 @@
+import { readFile } from 'node:fs/promises';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import { ConfigError, configure, lint } from './lint.js';
@@ -6,6 +9,7 @@ import { readSnapshot } from './load/file.js';
 import { readHttpServer, readStdioServer } from './load/server.js';
 import { formatJson } from './report/json.js';
 import { formatPretty } from './report/pretty.js';
+import { formatSarif } from './report/sarif.js';
 import { rules } from './rules/index.js';
 import type { Config } from './types.js';
 import { VERSION } from './version.js';
@@ -37,7 +41,8 @@ one, or onmcp's own { server, instructions, tools, prompts, resources }.
 
 Options:
   -c, --config <file>         The config to use (default: ${CONFIG_FILE}, if there is one)
-  -f, --format <format>       pretty, for a person (default), or json, for a script
+  -f, --format <format>       pretty, for a person (default), json, for a script, or sarif,
+                              for code scanning
   -H, --header <name: value>  Sent with each request to a <url>; repeat it for more than one
   --timeout <seconds>         How long the server has to answer each request (default: 30)
   -h, --help                  Show this help
@@ -122,8 +127,8 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
     return EXIT.usage;
   }
   const { format } = values;
-  if (format !== 'pretty' && format !== 'json') {
-    io.stderr(`--format takes pretty or json, not "${format}".\n`);
+  if (format !== 'pretty' && format !== 'json' && format !== 'sarif') {
+    io.stderr(`--format takes pretty, json or sarif, not "${format}".\n`);
     return EXIT.usage;
   }
 
@@ -137,11 +142,21 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
           ? await readHttpServer({ url, headers }, options)
           : await readSnapshot(target ?? '');
     const result = lint(snapshot, rules, config);
-    io.stdout(
-      format === 'json'
-        ? formatJson(result, snapshot)
-        : formatPretty(result, snapshot, { color: io.color }),
-    );
+    if (format === 'sarif') {
+      // A snapshot file is where each result points: its path from the folder onmcp runs in,
+      // which in CI is the repository's root, as code scanning expects.
+      const file =
+        serverCommand === undefined && url === undefined && target !== undefined
+          ? { uri: fileUri(target, io.cwd ?? process.cwd()), text: await readFile(target, 'utf8') }
+          : undefined;
+      io.stdout(formatSarif(result, snapshot, { rules, ...(file && { file }) }));
+    } else {
+      io.stdout(
+        format === 'json'
+          ? formatJson(result, snapshot)
+          : formatPretty(result, snapshot, { color: io.color }),
+      );
+    }
     return result.errorCount > 0 ? EXIT.problems : EXIT.ok;
   } catch (error) {
     io.stderr(`onmcp: ${(error as Error).message}\n`);
@@ -160,4 +175,13 @@ async function loadConfig(file: string | undefined): Promise<Config> {
     throw error;
   }
   return config;
+}
+
+// A path inside the folder as a relative URI with forward slashes, and one outside as file://.
+function fileUri(file: string, cwd: string): string {
+  const path = relative(cwd, resolve(file));
+  if (path === '..' || path.startsWith(`..${sep}`) || isAbsolute(path)) {
+    return pathToFileURL(resolve(file)).href;
+  }
+  return path.split(sep).map(encodeURIComponent).join('/');
 }
