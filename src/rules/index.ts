@@ -6,6 +6,7 @@ import { injectionPhrases } from './injection-phrases.js';
 import { paramDescription } from './param-description.js';
 import { promptDescription } from './prompt-description.js';
 import { requiredProperties } from './required-properties.js';
+import { resourceDescription } from './resource-description.js';
 import { schemaObject } from './schema-object.js';
 import { sensitivePaths } from './sensitive-paths.js';
 import { similarNames } from './similar-names.js';
@@ -24,6 +25,7 @@ export const rules: readonly Rule[] = [
   requiredProperties,
   paramDescription,
   promptDescription,
+  resourceDescription,
   descriptionBudget,
   contextBudget,
   toolAnnotations,
