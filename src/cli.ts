@@ -1,10 +1,12 @@
 import { parseArgs } from 'node:util';
 
-import { lint } from './lint.js';
+import { ConfigError, configure, lint } from './lint.js';
+import { CONFIG_FILE, findConfig, readConfig } from './load/config.js';
 import { readSnapshot } from './load/file.js';
 import { readHttpServer, readStdioServer } from './load/server.js';
 import { formatPretty } from './report/pretty.js';
 import { rules } from './rules/index.js';
+import type { Config } from './types.js';
 import { VERSION } from './version.js';
 
 export interface Io {
@@ -12,6 +14,8 @@ export interface Io {
   stderr: (text: string) => void;
   /** ANSI colors in the output: bin.ts turns them on for a terminal that isn't NO_COLOR. */
   color: boolean;
+  /** The folder to look for onmcp.config.json in (default: the current one). */
+  cwd?: string;
 }
 
 /** The exit codes: no errors, errors found, and onmcp couldn't run. */
@@ -31,6 +35,7 @@ After --, the command that starts the server over stdio, as a host's config give
 one, or onmcp's own { server, instructions, tools, prompts, resources }.
 
 Options:
+  -c, --config <file>         The config to use (default: ${CONFIG_FILE}, if there is one)
   -H, --header <name: value>  Sent with each request to a <url>; repeat it for more than one
   --timeout <seconds>         How long the server has to answer each request (default: 30)
   -h, --help                  Show this help
@@ -52,6 +57,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
       args: [...own],
       allowPositionals: true,
       options: {
+        config: { type: 'string', short: 'c' },
         header: { type: 'string', short: 'H', multiple: true },
         timeout: { type: 'string' },
         help: { type: 'boolean', short: 'h' },
@@ -114,6 +120,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   }
 
   try {
+    const config = await loadConfig(values.config ?? findConfig(io.cwd ?? '.'));
     const options = { timeoutMs: seconds * 1000 };
     const snapshot =
       serverCommand !== undefined
@@ -121,11 +128,24 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
         : url !== undefined
           ? await readHttpServer({ url, headers }, options)
           : await readSnapshot(target ?? '');
-    const result = lint(snapshot, rules);
+    const result = lint(snapshot, rules, config);
     io.stdout(formatPretty(result, snapshot, { color: io.color }));
     return result.errorCount > 0 ? EXIT.problems : EXIT.ok;
   } catch (error) {
     io.stderr(`onmcp: ${(error as Error).message}\n`);
     return EXIT.usage;
   }
+}
+
+/** Reads the config and checks it against the rules, before a server starts for nothing. */
+async function loadConfig(file: string | undefined): Promise<Config> {
+  if (file === undefined) return {};
+  const config = await readConfig(file);
+  try {
+    configure(rules, config);
+  } catch (error) {
+    if (error instanceof ConfigError) throw new ConfigError(`${file}: ${error.message}`);
+    throw error;
+  }
+  return config;
 }
