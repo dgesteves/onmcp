@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "docs": { "command": "node", "args": ["../servers/fake-server.mjs", "../servers/docs.json"] },
+    "files": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/../servers/fake-server.mjs", "../servers/files.json"],
+      "env": { "FILES_TOKEN": "${ONMCP_TEST_UNSET}" }
+    },
+    "broken": { "command": "onmcp-no-such-command", "args": ["--token", "s3cret"] },
+    "off": { "command": "node", "args": ["server.js"], "disabled": true }
+  }
+}

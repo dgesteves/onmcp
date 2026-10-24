@@ -25,6 +25,8 @@ export interface StdioServer {
   cwd?: string;
   /** Added to the environment the SDK passes on: PATH, HOME and the like. */
   env?: Record<string, string>;
+  /** How errors name the server (default: its command and args, as the person typed them). */
+  label?: string;
 }
 
 export interface HttpServer {
@@ -104,7 +106,7 @@ export async function readStdioServer(
     stderr = (stderr + chunk.toString('utf8')).slice(-STDERR_TAIL);
   });
 
-  const shown = [server.command, ...(server.args ?? [])].join(' ');
+  const shown = server.label ?? [server.command, ...(server.args ?? [])].join(' ');
   try {
     return await listOver(transport, options);
   } catch (error) {

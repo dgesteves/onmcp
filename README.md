@@ -1,6 +1,6 @@
 # onmcp
 
-**Keeps your MCP server agent-friendly:** checks the tools, prompts and resources your server lists the way a model reads them, and catches names that don't parse, schemas a model can't fill in, arguments it has to guess, and text that hides or gives orders to the model, with the fix. Run it on a server over stdio or HTTP, or on a saved `tools/list`.
+**Keeps your MCP server agent-friendly:** checks the tools, prompts and resources your server lists the way a model reads them, and catches names that don't parse, schemas a model can't fill in, arguments it has to guess, and text that hides or gives orders to the model, with the fix. Run it on a server over stdio or HTTP, on a saved `tools/list`, or on every server in your MCP config.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/dgesteves/onmcp/ci.yml?branch=main&style=flat-square&label=CI&labelColor=0d0f12)](https://github.com/dgesteves/onmcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/dgesteves/onmcp?style=flat-square&labelColor=0d0f12&color=0e7490)](LICENSE)
@@ -59,6 +59,15 @@ Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Ins
 ```sh
 onmcp check tools.json
 ```
+
+Or every server in a host's MCP config, such as Claude Code's `.mcp.json`, Claude Desktop's `claude_desktop_config.json`, Cursor's `mcp.json` or VS Code's `.vscode/mcp.json`. onmcp starts or connects to each one as the host would, and reports them together, each under its name. It's a quick way to check the third-party servers you already run for text that hides or gives orders to the model:
+
+```sh
+onmcp check .mcp.json
+onmcp check ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+It expands `${NAME}`, `${NAME:-default}`, `${env:NAME}`, `${workspaceFolder}` and `${userHome}`. What it can't expand, such as an unset variable or VS Code's `${input:...}`, it passes as written, as Claude Code does, and says which. Each server is shown by its command or URL, never its args, env or headers, which can hold a token. A server that doesn't start or answer doesn't stop the others, and the run exits `2` once they're checked. `--format json` gives each server's report; SARIF and GitHub annotations describe one server at a time.
 
 | Option                       | What it does                                                                                                                       |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |

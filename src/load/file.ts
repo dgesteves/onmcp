@@ -112,13 +112,21 @@ export function parseSnapshot(json: unknown): Snapshot {
 
 /** Reads a snapshot from a JSON file: see parseSnapshot for the shapes it takes. */
 export async function readSnapshot(file: string): Promise<Snapshot> {
+  return parseSnapshotFile(await readJsonFile(file), file);
+}
+
+/** Reads a JSON file, a snapshot or a host's config. */
+export async function readJsonFile(file: string): Promise<unknown> {
   const text = await readFile(file, 'utf8');
-  let json: unknown;
   try {
-    json = JSON.parse(text);
+    return JSON.parse(text) as unknown;
   } catch (error) {
     throw new SnapshotError(`${file} isn't JSON: ${(error as Error).message}`, { cause: error });
   }
+}
+
+/** parseSnapshot, with the file's name in its errors. */
+export function parseSnapshotFile(json: unknown, file: string): Snapshot {
   try {
     return parseSnapshot(json);
   } catch (error) {
