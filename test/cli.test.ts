@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { describe, expect, test } from 'vitest';
 
 import { EXIT, main } from '../src/cli.js';
+import type { JsonReport } from '../src/report/json.js';
 import { VERSION } from '../src/version.js';
 import { fakeHttpServer } from './fixtures/servers/fake-http-server.mjs';
 
@@ -89,6 +90,14 @@ describe('onmcp check', () => {
     );
   });
 
+  test('prints JSON with --format json, and exits the same way', async () => {
+    const { code, stdout } = await cli('check', '-f', 'json', fixture('undescribed.json'));
+    expect(code).toBe(EXIT.problems);
+    const report = JSON.parse(stdout) as JsonReport;
+    expect(report).toMatchObject({ errorCount: 1, warningCount: 0, checked: { tools: 2 } });
+    expect(report.problems.map((problem) => problem.rule)).toEqual(['tool-description']);
+  });
+
   test('reads onmcp.config.json from the folder it runs in', async () => {
     const { code, stdout } = await cliIn(fixture('config'), 'check', fixture('undescribed.json'));
     expect(code).toBe(EXIT.ok);
@@ -158,6 +167,12 @@ describe('onmcp', () => {
       );
     },
   );
+
+  test('rejects a --format it doesn’t have', async () => {
+    const { code, stderr } = await cli('check', '--format', 'sarif', 'a.json');
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toBe('--format takes pretty or json, not "sarif".\n');
+  });
 
   test.each(['0', '-1', 'soon'])('rejects --timeout %s', async (timeout) => {
     const { code, stderr } = await cli('check', `--timeout=${timeout}`, 'a.json');
