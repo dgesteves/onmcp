@@ -60,12 +60,12 @@ Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Ins
 onmcp check tools.json
 ```
 
-| Option                       | What it does                                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one)                     |
-| `-f, --format <format>`      | `pretty`, for a person (default), `json`, for a script, or `sarif`, for code scanning |
-| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one                          |
-| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)                        |
+| Option                       | What it does                                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one)                                                                  |
+| `-f, --format <format>`      | `pretty`, for a person (default), `json`, for a script, `sarif`, for code scanning, or `github`, for annotations in GitHub Actions |
+| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one                                                                       |
+| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)                                                                     |
 
 onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
 
@@ -79,6 +79,12 @@ onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") 
 
 ```sh
 onmcp check -f sarif tools.json > onmcp.sarif
+```
+
+`--format github` prints a workflow command for each problem, which GitHub Actions shows as an annotation on the run. For a saved listing in the repository, the annotation also goes on its tool's line in the pull request's diff. Everything the server wrote is escaped, so a name with a line break in it can't start a workflow command of its own.
+
+```yaml
+- run: onmcp check -f github mcp/tools.json
 ```
 
 ## Rules

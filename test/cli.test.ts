@@ -140,6 +140,33 @@ describe('onmcp check', () => {
     );
   });
 
+  test('prints GitHub annotations with --format github, on the snapshot’s lines', async () => {
+    const { code, stdout } = await cliIn(
+      fixture(''),
+      'check',
+      '-f',
+      'github',
+      fixture('undescribed.json'),
+    );
+    expect(code).toBe(EXIT.problems);
+    expect(stdout).toBe(
+      '::error file=undescribed.json,line=8,title=tool-description%3A tool sync::The tool has no description. Say what the tool does and when to call it, in a sentence or two.\n',
+    );
+  });
+
+  test('prints GitHub annotations without a file for a server', async () => {
+    const { stdout } = await cli(
+      'check',
+      '-f',
+      'github',
+      '--',
+      'node',
+      fixture('servers/fake-server.mjs'),
+      fixture('servers/docs.json'),
+    );
+    expect(stdout).toMatch(/^::error title=tool-description%3A tool \w+::/);
+  });
+
   test('reads onmcp.config.json from the folder it runs in', async () => {
     const { code, stdout } = await cliIn(fixture('config'), 'check', fixture('undescribed.json'));
     expect(code).toBe(EXIT.ok);
@@ -213,7 +240,7 @@ describe('onmcp', () => {
   test('rejects a --format it doesn’t have', async () => {
     const { code, stderr } = await cli('check', '--format', 'xml', 'a.json');
     expect(code).toBe(EXIT.usage);
-    expect(stderr).toBe('--format takes pretty, json or sarif, not "xml".\n');
+    expect(stderr).toBe('--format takes pretty, json, sarif or github, not "xml".\n');
   });
 
   test.each(['0', '-1', 'soon'])('rejects --timeout %s', async (timeout) => {

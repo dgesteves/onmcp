@@ -7,6 +7,7 @@ import { ConfigError, configure, lint } from './lint.js';
 import { CONFIG_FILE, findConfig, readConfig } from './load/config.js';
 import { readSnapshot } from './load/file.js';
 import { readHttpServer, readStdioServer } from './load/server.js';
+import { formatGithub } from './report/github.js';
 import { formatJson } from './report/json.js';
 import { formatPretty } from './report/pretty.js';
 import { formatSarif } from './report/sarif.js';
@@ -41,8 +42,8 @@ one, or onmcp's own { server, instructions, tools, prompts, resources }.
 
 Options:
   -c, --config <file>         The config to use (default: ${CONFIG_FILE}, if there is one)
-  -f, --format <format>       pretty, for a person (default), json, for a script, or sarif,
-                              for code scanning
+  -f, --format <format>       pretty, for a person (default), json, for a script, sarif, for
+                              code scanning, or github, for annotations in GitHub Actions
   -H, --header <name: value>  Sent with each request to a <url>; repeat it for more than one
   --timeout <seconds>         How long the server has to answer each request (default: 30)
   -h, --help                  Show this help
@@ -127,8 +128,8 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
     return EXIT.usage;
   }
   const { format } = values;
-  if (format !== 'pretty' && format !== 'json' && format !== 'sarif') {
-    io.stderr(`--format takes pretty, json or sarif, not "${format}".\n`);
+  if (format !== 'pretty' && format !== 'json' && format !== 'sarif' && format !== 'github') {
+    io.stderr(`--format takes pretty, json, sarif or github, not "${format}".\n`);
     return EXIT.usage;
   }
 
@@ -142,20 +143,29 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
           ? await readHttpServer({ url, headers }, options)
           : await readSnapshot(target ?? '');
     const result = lint(snapshot, rules, config);
-    if (format === 'sarif') {
-      // A snapshot file is where each result points: its path from the folder onmcp runs in,
-      // which in CI is the repository's root, as code scanning expects.
-      const file =
-        serverCommand === undefined && url === undefined && target !== undefined
-          ? { uri: fileUri(target, io.cwd ?? process.cwd()), text: await readFile(target, 'utf8') }
-          : undefined;
-      io.stdout(formatSarif(result, snapshot, { rules, ...(file && { file }) }));
-    } else {
-      io.stdout(
-        format === 'json'
-          ? formatJson(result, snapshot)
-          : formatPretty(result, snapshot, { color: io.color }),
-      );
+    // A snapshot file is where SARIF results and GitHub annotations point.
+    const source =
+      (format === 'sarif' || format === 'github') && target !== undefined && url === undefined
+        ? { ...locate(target, io.cwd ?? process.cwd()), text: await readFile(target, 'utf8') }
+        : undefined;
+    switch (format) {
+      case 'pretty':
+        io.stdout(formatPretty(result, snapshot, { color: io.color }));
+        break;
+      case 'json':
+        io.stdout(formatJson(result, snapshot));
+        break;
+      case 'sarif':
+        io.stdout(
+          formatSarif(result, snapshot, {
+            rules,
+            ...(source && { file: { uri: source.uri, text: source.text } }),
+          }),
+        );
+        break;
+      case 'github':
+        io.stdout(formatGithub(result, source && { file: source }));
+        break;
     }
     return result.errorCount > 0 ? EXIT.problems : EXIT.ok;
   } catch (error) {
@@ -177,11 +187,14 @@ async function loadConfig(file: string | undefined): Promise<Config> {
   return config;
 }
 
-// A path inside the folder as a relative URI with forward slashes, and one outside as file://.
-function fileUri(file: string, cwd: string): string {
-  const path = relative(cwd, resolve(file));
+// A file by its path from the folder onmcp runs in, which in CI is the repository's root, with
+// forward slashes, and as a URI. A file outside the folder has its full path and a file:// URI.
+function locate(file: string, cwd: string): { path: string; uri: string } {
+  const absolute = resolve(file);
+  const path = relative(cwd, absolute);
   if (path === '..' || path.startsWith(`..${sep}`) || isAbsolute(path)) {
-    return pathToFileURL(resolve(file)).href;
+    return { path: absolute, uri: pathToFileURL(absolute).href };
   }
-  return path.split(sep).map(encodeURIComponent).join('/');
+  const parts = path.split(sep);
+  return { path: parts.join('/'), uri: parts.map(encodeURIComponent).join('/') };
 }
