@@ -1,24 +1,35 @@
 import type { Target } from '../types.js';
 
-/** How the reports name a target: `server`, `tool search`, `prompt summarize`, `resource docs://`. */
+/**
+ * How the reports name a target: `server`, `tool search`, `prompt summarize`, `resource docs://`,
+ * `resource template file:///{path}`.
+ */
 export function label(target: Target): string {
   switch (target.kind) {
     case 'server':
       return 'server';
     case 'resource':
       return `resource ${target.uri}`;
+    case 'resource-template':
+      return `resource template ${target.uriTemplate}`;
     default:
       return `${target.kind} ${target.name}`;
   }
 }
 
 // Where each list starts in a snapshot file, so a server named like one of its tools isn't it.
-const SECTIONS = { tool: '"tools"', prompt: '"prompts"', resource: '"resources"' } as const;
+const SECTIONS = {
+  tool: '"tools"',
+  prompt: '"prompts"',
+  resource: '"resources"',
+  'resource-template': '"resourceTemplates"',
+} as const;
 
 /**
- * The line where a snapshot file defines the target: the "name" of a tool or a prompt, or the
- * "uri" of a resource, from where its list starts, or the server's "instructions". Line 1 when the
- * file writes it another way, such as with escapes JSON.stringify doesn't use.
+ * The line where a snapshot file defines the target: the "name" of a tool or a prompt, the "uri"
+ * of a resource or the "uriTemplate" of a template, from where its list starts, or the server's
+ * "instructions". Line 1 when the file writes it another way, such as with escapes
+ * JSON.stringify doesn't use.
  */
 export function lineOf(target: Target, text: string): number {
   if (target.kind === 'server' && target.path !== 'instructions') return 1;
@@ -27,7 +38,9 @@ export function lineOf(target: Target, text: string): number {
       ? ['instructions', undefined]
       : target.kind === 'resource'
         ? ['uri', target.uri]
-        : ['name', target.name];
+        : target.kind === 'resource-template'
+          ? ['uriTemplate', target.uriTemplate]
+          : ['name', target.name];
   const pattern = new RegExp(
     `"${key}"\\s*:${value === undefined ? '' : `\\s*${escape(JSON.stringify(value))}`}`,
     'g',

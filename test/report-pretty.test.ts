@@ -112,3 +112,42 @@ test('shows what a server wrote, and passes nothing on to the terminal', () => {
   expect(output).toContain('  tool evil<U+001B>[2J<U+000A>::warning::injected\n');
   expect(output).toContain('→ Rename<U+009B>31m it.');
 });
+
+test('groups resource templates after the resources, and counts them', () => {
+  const output = formatPretty(
+    result([
+      {
+        rule: 'resource-description',
+        severity: 'warning',
+        target: { kind: 'resource-template', uriTemplate: 'git://diff/{base}...{head}' },
+        message: 'The template has no description.',
+      },
+      {
+        rule: 'resource-description',
+        severity: 'warning',
+        target: { kind: 'resource', uri: 'file:///README.md' },
+        message: 'The resource has no description.',
+      },
+    ]),
+    snapshotOf({
+      resources: [{ uri: 'file:///README.md', name: 'readme' }],
+      resourceTemplates: [
+        { uriTemplate: 'file:///{path}', name: 'file' },
+        { uriTemplate: 'git://diff/{base}...{head}', name: 'diff' },
+      ],
+    }),
+  );
+  expect(output).toBe(
+    [
+      '',
+      '  resource file:///README.md',
+      '  ⚠ resource-description  The resource has no description.',
+      '',
+      '  resource template git://diff/{base}...{head}',
+      '  ⚠ resource-description  The template has no description.',
+      '',
+      '⚠ 2 problems (0 errors, 2 warnings) in 0 tools, 1 resource, 2 resource templates',
+      '',
+    ].join('\n'),
+  );
+});

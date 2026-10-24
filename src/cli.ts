@@ -39,7 +39,7 @@ After --, the command that starts the server over stdio, as a host's config give
 <url> is the server's endpoint, over Streamable HTTP or the older HTTP+SSE:
   onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
 <snapshot.json> is what a server lists, saved: a tools/list result, a JSON-RPC response that holds
-one, or onmcp's own { server, instructions, tools, prompts, resources }.
+one, or onmcp's own { server, instructions, tools, prompts, resources, resourceTemplates }.
 
 Options:
   -c, --config <file>         The config to use (default: ${CONFIG_FILE}, if there is one)

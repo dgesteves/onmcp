@@ -4,7 +4,7 @@ import { label, lineOf } from './target.js';
 export interface GithubOptions {
   /**
    * The snapshot file that was checked, as a path from the repository's root and its text: each
-   * annotation then goes on the line where its tool, prompt or resource is.
+   * annotation then goes on the line where its tool, prompt, resource or template is.
    */
   file?: { path: string; text: string };
 }

@@ -1,0 +1,26 @@
+{
+  "serverInfo": { "name": "files", "version": "1.0.0" },
+  "capabilities": { "resources": {} },
+  "resources": [
+    {
+      "uri": "file:///README.md",
+      "name": "readme",
+      "description": "The project's README.",
+      "mimeType": "text/markdown"
+    }
+  ],
+  "resourceTemplates": [
+    {
+      "uriTemplate": "file:///{path}",
+      "name": "file",
+      "description": "A file in the project, by its path from the root.",
+      "mimeType": "application/octet-stream"
+    },
+    {
+      "uriTemplate": "git://log/{ref}",
+      "name": "log",
+      "description": "The commits on a branch or tag, newest first."
+    },
+    { "uriTemplate": "git://diff/{base}...{head}", "name": "diff" }
+  ]
+}

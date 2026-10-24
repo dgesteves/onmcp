@@ -40,6 +40,15 @@ export interface Resource {
   mimeType?: string;
 }
 
+/** Resources a client reads by filling in a URI template (RFC 6570), such as `file:///{path}`. */
+export interface ResourceTemplate {
+  uriTemplate: string;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+}
+
 /** What a server lists, as onmcp checks it: read from a saved file, or from the server itself. */
 export interface Snapshot {
   server?: { name: string; version: string; title?: string };
@@ -48,18 +57,20 @@ export interface Snapshot {
   tools: Tool[];
   prompts: Prompt[];
   resources: Resource[];
+  resourceTemplates: ResourceTemplate[];
 }
 
 export type Severity = 'error' | 'warning';
 
 /**
- * Where a problem is: the server itself, or one of its tools, prompts or resources. `path` points
- * into it, such as `inputSchema.properties.query` or `arguments.0`.
+ * Where a problem is: the server itself, or one of its tools, prompts, resources or resource
+ * templates. `path` points into it, such as `inputSchema.properties.query` or `arguments.0`.
  */
 export type Target =
   | { kind: 'server'; path?: string }
   | { kind: 'tool' | 'prompt'; name: string; path?: string }
-  | { kind: 'resource'; uri: string; path?: string };
+  | { kind: 'resource'; uri: string; path?: string }
+  | { kind: 'resource-template'; uriTemplate: string; path?: string };
 
 export interface Problem {
   rule: string;

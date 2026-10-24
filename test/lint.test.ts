@@ -10,6 +10,7 @@ const snapshot: Snapshot = {
   ],
   prompts: [],
   resources: [],
+  resourceTemplates: [],
 };
 
 // Reports each tool without a description.

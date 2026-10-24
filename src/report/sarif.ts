@@ -45,7 +45,7 @@ export interface SarifOptions {
   rules?: readonly Rule[];
   /**
    * The snapshot file that was checked, as a URI and its text: each result then points at the line
-   * where its tool, prompt or resource is in it.
+   * where its tool, prompt, resource or template is in it.
    */
   file?: { uri: string; text: string };
 }
@@ -115,6 +115,12 @@ function logicalLocation(target: Target, snapshot: Snapshot) {
       return {
         name: target.uri,
         fullyQualifiedName: `resource/${target.uri}${path}`,
+        kind: 'resource',
+      };
+    case 'resource-template':
+      return {
+        name: target.uriTemplate,
+        fullyQualifiedName: `resource-template/${target.uriTemplate}${path}`,
         kind: 'resource',
       };
     default:

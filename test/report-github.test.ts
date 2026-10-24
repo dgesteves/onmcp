@@ -61,3 +61,15 @@ test('escapes what a server wrote, so it can’t start a workflow command of its
     '',
   ]);
 });
+
+test('titles a resource template’s annotation with its URI template', () => {
+  const output = formatGithub(
+    result({
+      ...noDescription,
+      target: { kind: 'resource-template', uriTemplate: 'file:///{path}', path: 'description' },
+    }),
+  );
+  expect(output).toMatch(
+    /^::error title=tool-description%3A resource template file%3A\/\/\/\{path\}::/,
+  );
+});
