@@ -5,5 +5,6 @@ export { formatJson, type JsonReport } from './report/json.js';
 export { formatPretty, type PrettyOptions } from './report/pretty.js';
 export { formatSarif, type SarifLog, type SarifOptions } from './report/sarif.js';
 export { rules } from './rules/index.js';
+export { createServer, serve, type ServeOptions } from './serve.js';
 export type * from './types.js';
 export { VERSION } from './version.js';

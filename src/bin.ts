@@ -6,4 +6,5 @@ process.exitCode = await main(process.argv.slice(2), {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
   color,
+  interactive: process.stdin.isTTY,
 });

@@ -43,6 +43,8 @@ jobs:
           set +e
           node dist/cli.js check "$(cat url.txt)"
           test $? -eq 1
+      - name: Run the built CLI on its own MCP server, which has no problems
+        run: node dist/cli.js check -- node dist/cli.js serve
       - name: Run the built CLI on the README's example, which has 5 problems
         run: |
           set +e

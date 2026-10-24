@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest';
 import { EXIT, main } from '../src/cli.js';
 import type { JsonReport } from '../src/report/json.js';
 import type { SarifLog } from '../src/report/sarif.js';
+import type { ServeOptions } from '../src/serve.js';
 import { VERSION } from '../src/version.js';
 import { fakeHttpServer } from './fixtures/servers/fake-http-server.mjs';
 
@@ -333,5 +334,60 @@ describe('onmcp', () => {
     const { code, stderr } = await cli('check', '--frmat', 'json');
     expect(code).toBe(EXIT.usage);
     expect(stderr).toMatch(/--frmat/);
+  });
+});
+
+describe('onmcp serve', () => {
+  /** Runs `onmcp serve` with a serve() that records what it was given, instead of taking stdin. */
+  async function serve(argv: string[], { cwd = process.cwd(), interactive = false } = {}) {
+    const started: ServeOptions[] = [];
+    let stderr = '';
+    const code = await main(['serve', ...argv], {
+      stdout: () => undefined,
+      stderr: (text) => (stderr += text),
+      color: false,
+      cwd,
+      interactive,
+      serve: (options) => started.push(options),
+    });
+    return { code, stderr, started };
+  }
+
+  test('starts the MCP server in the folder, quietly when an agent runs it', async () => {
+    expect(await serve([], { cwd: fixture('config') })).toEqual({
+      code: EXIT.ok,
+      stderr: '',
+      started: [{ cwd: fixture('config') }],
+    });
+  });
+
+  test('passes on --config', async () => {
+    const { started } = await serve(['-c', fixture('config/onmcp.config.json')]);
+    expect(started[0]?.config).toBe(fixture('config/onmcp.config.json'));
+  });
+
+  test('says it waits for an agent when a person runs it in a terminal', async () => {
+    const { code, stderr } = await serve([], { interactive: true });
+    expect(code).toBe(EXIT.ok);
+    expect(stderr).toMatch(/^onmcp serve is an MCP server: it is waiting for an agent on stdin\./);
+  });
+
+  test('doesn’t start with a config it can’t use', async () => {
+    const { code, stderr, started } = await serve(['-c', fixture('config/typo.json')]);
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toMatch(/typo\.json: Unknown rule/);
+    expect(started).toEqual([]);
+  });
+
+  test.each([
+    [['tools.json']],
+    [['-f', 'json']],
+    [['--max-warnings', '0']],
+    [['--', 'node', 'x.js']],
+  ])('takes nothing but --config: %j', async (argv) => {
+    const { code, stderr, started } = await serve(argv);
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toMatch(/^serve takes only --config: the agent says what to check\./);
+    expect(started).toEqual([]);
   });
 });
