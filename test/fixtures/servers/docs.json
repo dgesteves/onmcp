@@ -24,5 +24,12 @@
     { "name": "sync", "inputSchema": { "type": "object" } }
   ],
   "prompts": [{ "name": "summarize", "description": "Summarizes a page." }],
-  "resources": [{ "uri": "docs://index", "name": "index", "mimeType": "text/markdown" }]
+  "resources": [
+    {
+      "uri": "docs://index",
+      "name": "index",
+      "description": "Every page of the docs, by section.",
+      "mimeType": "text/markdown"
+    }
+  ]
 }

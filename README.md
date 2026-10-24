@@ -91,22 +91,23 @@ onmcp check -f sarif tools.json > onmcp.sarif
 
 <!-- rules:start -->
 
-| Rule                                                       | Default | Catches                                                                                                         |
-| ---------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| [`tool-description`](docs/rules/tool-description.md)       | error   | Every tool has a description.                                                                                   |
-| [`tool-name`](docs/rules/tool-name.md)                     | error   | Tool names use only the characters MCP allows, and at most 128 of them.                                         |
-| [`unique-names`](docs/rules/unique-names.md)               | error   | No two tools or prompts share a name, and no two resources share a URI.                                         |
-| [`similar-names`](docs/rules/similar-names.md)             | warning | No two tool names differ only in case, separators, a plural or a version, such as get_user and get_users.       |
-| [`schema-object`](docs/rules/schema-object.md)             | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
-| [`required-properties`](docs/rules/required-properties.md) | error   | required names only properties the schema has, at every depth.                                                  |
-| [`param-description`](docs/rules/param-description.md)     | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
-| [`prompt-description`](docs/rules/prompt-description.md)   | warning | Every prompt, and each of its arguments, has a description.                                                     |
-| [`description-budget`](docs/rules/description-budget.md)   | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
-| [`context-budget`](docs/rules/context-budget.md)           | warning | The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context.                |
-| [`tool-annotations`](docs/rules/tool-annotations.md)       | error   | A tool’s annotations agree with each other, and none says a tool named for deleting is safe.                    |
-| [`hidden-characters`](docs/rules/hidden-characters.md)     | error   | No invisible characters in any text a model reads: names, descriptions, schemas.                                |
-| [`injection-phrases`](docs/rules/injection-phrases.md)     | error   | No text that tells the model to drop its instructions, hide things from the user, or poses as a system message. |
-| [`sensitive-paths`](docs/rules/sensitive-paths.md)         | warning | No credential or agent config paths, such as ~/.ssh or mcp.json, in what a model reads.                         |
+| Rule                                                         | Default | Catches                                                                                                         |
+| ------------------------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------- |
+| [`tool-description`](docs/rules/tool-description.md)         | error   | Every tool has a description.                                                                                   |
+| [`tool-name`](docs/rules/tool-name.md)                       | error   | Tool names use only the characters MCP allows, and at most 128 of them.                                         |
+| [`unique-names`](docs/rules/unique-names.md)                 | error   | No two tools or prompts share a name, and no two resources share a URI.                                         |
+| [`similar-names`](docs/rules/similar-names.md)               | warning | No two tool names differ only in case, separators, a plural or a version, such as get_user and get_users.       |
+| [`schema-object`](docs/rules/schema-object.md)               | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
+| [`required-properties`](docs/rules/required-properties.md)   | error   | required names only properties the schema has, at every depth.                                                  |
+| [`param-description`](docs/rules/param-description.md)       | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
+| [`prompt-description`](docs/rules/prompt-description.md)     | warning | Every prompt, and each of its arguments, has a description.                                                     |
+| [`resource-description`](docs/rules/resource-description.md) | warning | Every resource has a description.                                                                               |
+| [`description-budget`](docs/rules/description-budget.md)     | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
+| [`context-budget`](docs/rules/context-budget.md)             | warning | The server’s instructions and tools fit in maxTokens (10,000 by default) of the model’s context.                |
+| [`tool-annotations`](docs/rules/tool-annotations.md)         | error   | A tool’s annotations agree with each other, and none says a tool named for deleting is safe.                    |
+| [`hidden-characters`](docs/rules/hidden-characters.md)       | error   | No invisible characters in any text a model reads: names, descriptions, schemas.                                |
+| [`injection-phrases`](docs/rules/injection-phrases.md)       | error   | No text that tells the model to drop its instructions, hide things from the user, or poses as a system message. |
+| [`sensitive-paths`](docs/rules/sensitive-paths.md)           | warning | No credential or agent config paths, such as ~/.ssh or mcp.json, in what a model reads.                         |
 
 <!-- rules:end -->
 
