@@ -4,6 +4,7 @@ import { descriptionBudget } from './description-budget.js';
 import { hiddenCharacters } from './hidden-characters.js';
 import { injectionPhrases } from './injection-phrases.js';
 import { paramDescription } from './param-description.js';
+import { paramName } from './param-name.js';
 import { promptDescription } from './prompt-description.js';
 import { requiredProperties } from './required-properties.js';
 import { resourceDescription } from './resource-description.js';
@@ -20,6 +21,7 @@ import { uniqueNames } from './unique-names.js';
 export const rules: readonly Rule[] = [
   toolDescription,
   toolName,
+  paramName,
   uniqueNames,
   similarNames,
   schemaObject,

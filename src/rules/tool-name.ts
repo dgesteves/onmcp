@@ -1,7 +1,7 @@
 import type { Rule } from '../types.js';
+import { list, otherCharacters, safeName } from '../util/names.js';
 
 // MCP's tool names (2025-11-25): 1 to 128 ASCII letters, digits, "_", "-" and ".".
-const ALLOWED = /^[A-Za-z0-9_.-]+$/;
 const MAX_LENGTH = 128;
 
 /**
@@ -20,12 +20,12 @@ export const toolName: Rule = {
         report({ target, message: 'The tool’s name is empty.', fix: 'Give it a name.' });
         continue;
       }
-      if (!ALLOWED.test(name)) {
-        const bad = [...new Set(name.replace(/[A-Za-z0-9_.-]/g, ''))].map(describe);
+      const other = otherCharacters(name);
+      if (other.length > 0) {
         report({
           target,
-          message: `The name has ${list(bad)}: MCP allows only ASCII letters, digits, "_", "-" and ".".`,
-          fix: `Rename it "${suggest(name)}".`,
+          message: `The name has ${list(other)}: MCP allows only ASCII letters, digits, "_", "-" and ".".`,
+          fix: `Rename it "${safeName(name, MAX_LENGTH) || 'tool'}".`,
         });
       }
       if (name.length > MAX_LENGTH) {
@@ -38,30 +38,3 @@ export const toolName: Rule = {
     }
   },
 };
-
-function describe(character: string): string {
-  if (character === ' ') return 'a space';
-  if (/\s/.test(character)) return 'whitespace';
-  const code = character.codePointAt(0) ?? 0;
-  if (code < 0x20 || code > 0x7e) {
-    return `"${character}" (U+${code.toString(16).toUpperCase().padStart(4, '0')})`;
-  }
-  return `"${character}"`;
-}
-
-function list(items: string[]): string {
-  if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} and ${items.at(-1) ?? ''}`;
-}
-
-// The name with each run of characters MCP doesn't allow made into one "_".
-function suggest(name: string): string {
-  return (
-    name
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^A-Za-z0-9_.-]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .slice(0, MAX_LENGTH) || 'tool'
-  );
-}
