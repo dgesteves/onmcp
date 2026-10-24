@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 
 import { lint } from './lint.js';
 import { readSnapshot } from './load/file.js';
-import { readStdioServer } from './load/server.js';
+import { readHttpServer, readStdioServer } from './load/server.js';
 import { formatPretty } from './report/pretty.js';
 import { rules } from './rules/index.js';
 import { VERSION } from './version.js';
@@ -18,19 +18,23 @@ export interface Io {
 export const EXIT = { ok: 0, problems: 1, usage: 2 } as const;
 
 const USAGE = `Usage: onmcp check [options] -- <command> [args...]
+       onmcp check [options] <url>
        onmcp check [options] <snapshot.json>
 
 Checks the tools, prompts and resources an MCP server lists, the way a model reads them.
 
 After --, the command that starts the server over stdio, as a host's config gives it:
   onmcp check -- npx -y @modelcontextprotocol/server-everything
+<url> is the server's Streamable HTTP endpoint:
+  onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
 <snapshot.json> is what a server lists, saved: a tools/list result, a JSON-RPC response that holds
 one, or onmcp's own { server, instructions, tools, prompts, resources }.
 
 Options:
-  --timeout <seconds>  How long the server has to answer each request (default: 30)
-  -h, --help           Show this help
-  -v, --version        Show the version
+  -H, --header <name: value>  Sent with each request to a <url>; repeat it for more than one
+  --timeout <seconds>         How long the server has to answer each request (default: 30)
+  -h, --help                  Show this help
+  -v, --version               Show the version
 
 Exits 0 with no errors, 1 with errors, and 2 when it couldn't run.
 `;
@@ -48,6 +52,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
       args: [...own],
       allowPositionals: true,
       options: {
+        header: { type: 'string', short: 'H', multiple: true },
         timeout: { type: 'string' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
@@ -72,19 +77,35 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
     io.stderr(`Unknown command "${command}".\n\n${USAGE}`);
     return EXIT.usage;
   }
-  const [file] = rest;
+  const [target] = rest;
   const [serverCommand, ...serverArgs] = server;
   if (
     command === undefined ||
     rest.length > 1 ||
-    (file === undefined) === (serverCommand === undefined)
+    (target === undefined) === (serverCommand === undefined)
   ) {
     io.stderr(
-      file !== undefined && serverCommand !== undefined
-        ? `Give a snapshot or a command after --, not both.\n\n${USAGE}`
+      target !== undefined && serverCommand !== undefined
+        ? `Give a snapshot, a URL or a command after --, not more than one.\n\n${USAGE}`
         : USAGE,
     );
     return EXIT.usage;
+  }
+  const url = target !== undefined && /^https?:\/\//i.test(target) ? target : undefined;
+  if (values.header !== undefined && url === undefined) {
+    io.stderr('--header goes with a server’s <url>, not a snapshot or a command.\n');
+    return EXIT.usage;
+  }
+  const headers: Record<string, string> = {};
+  for (const header of values.header ?? []) {
+    const colon = header.indexOf(':');
+    const name = header.slice(0, colon).trim();
+    if (colon === -1 || !/^[\w!#$%&'*+.^`|~-]+$/.test(name)) {
+      // Without the header itself, which is likely to hold a token.
+      io.stderr('--header takes "Name: value", such as "Authorization: Bearer <token>".\n');
+      return EXIT.usage;
+    }
+    headers[name] = header.slice(colon + 1).trim();
   }
   const seconds = values.timeout === undefined ? 30 : Number(values.timeout);
   if (!(seconds > 0)) {
@@ -93,13 +114,13 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   }
 
   try {
+    const options = { timeoutMs: seconds * 1000 };
     const snapshot =
-      serverCommand === undefined
-        ? await readSnapshot(file ?? '')
-        : await readStdioServer(
-            { command: serverCommand, args: serverArgs },
-            { timeoutMs: seconds * 1000 },
-          );
+      serverCommand !== undefined
+        ? await readStdioServer({ command: serverCommand, args: serverArgs }, options)
+        : url !== undefined
+          ? await readHttpServer({ url, headers }, options)
+          : await readSnapshot(target ?? '');
     const result = lint(snapshot, rules);
     io.stdout(formatPretty(result, snapshot, { color: io.color }));
     return result.errorCount > 0 ? EXIT.problems : EXIT.ok;

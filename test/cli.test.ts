@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
+
 import { describe, expect, test } from 'vitest';
 
 import { EXIT, main } from '../src/cli.js';
 import { VERSION } from '../src/version.js';
+import { fakeHttpServer } from './fixtures/servers/fake-http-server.mjs';
 
 const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).pathname;
+const listing = JSON.parse(readFileSync(fixture('servers/docs.json'), 'utf8')) as object;
 
 async function cli(...argv: string[]) {
   let stdout = '';
@@ -44,6 +49,25 @@ describe('onmcp check', () => {
     expect(stdout).toMatch(/in 3 tools, 1 prompt, 1 resource\n$/);
   });
 
+  test('checks the server at a URL, with each --header', async () => {
+    const { server } = fakeHttpServer(listing, { token: 'secret' });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as AddressInfo;
+    try {
+      const { code, stdout } = await cli(
+        'check',
+        `http://127.0.0.1:${port}/mcp`,
+        '-H',
+        'Authorization: Bearer secret',
+      );
+      expect(code).toBe(EXIT.problems);
+      expect(stdout).toMatch(/in 3 tools, 1 prompt, 1 resource\n$/);
+    } finally {
+      server.closeAllConnections();
+      server.close();
+    }
+  });
+
   test('passes options after -- to the server, not to onmcp', async () => {
     const { code, stderr } = await cli(
       'check',
@@ -77,11 +101,31 @@ describe('onmcp', () => {
     expect(stdout).toMatch(/^Usage: onmcp check \[options\] -- <command> \[args...\]/);
   });
 
-  test('takes a snapshot or a command, not both', async () => {
-    const { code, stderr } = await cli('check', 'a.json', '--', 'node', 'server.js');
+  test.each([['a.json'], ['https://example.com/mcp']])(
+    'takes %s or a command, not both',
+    async (target) => {
+      const { code, stderr } = await cli('check', target, '--', 'node', 'server.js');
+      expect(code).toBe(EXIT.usage);
+      expect(stderr).toMatch(/^Give a snapshot, a URL or a command after --, not more than one\./);
+    },
+  );
+
+  test('takes --header only with a URL', async () => {
+    const { code, stderr } = await cli('check', '-H', 'X-Team: docs', 'a.json');
     expect(code).toBe(EXIT.usage);
-    expect(stderr).toMatch(/^Give a snapshot or a command after --, not both\./);
+    expect(stderr).toBe('--header goes with a server’s <url>, not a snapshot or a command.\n');
   });
+
+  test.each(['Authorization Bearer secret', ': secret', 'Bad Name: secret'])(
+    'rejects --header %j without echoing it',
+    async (header) => {
+      const { code, stderr } = await cli('check', '--header', header, 'https://example.com/mcp');
+      expect(code).toBe(EXIT.usage);
+      expect(stderr).toBe(
+        '--header takes "Name: value", such as "Authorization: Bearer <token>".\n',
+      );
+    },
+  );
 
   test.each(['0', '-1', 'soon'])('rejects --timeout %s', async (timeout) => {
     const { code, stderr } = await cli('check', `--timeout=${timeout}`, 'a.json');

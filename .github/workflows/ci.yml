@@ -36,6 +36,13 @@ jobs:
           set +e
           node dist/cli.js check -- node test/fixtures/servers/fake-server.mjs test/fixtures/servers/docs.json
           test $? -eq 1
+      - name: Run the built CLI on a server over Streamable HTTP, which has a tool with no description
+        run: |
+          node test/fixtures/servers/fake-http-server.mjs test/fixtures/servers/docs.json 0 > url.txt &
+          for _ in $(seq 50); do [ -s url.txt ] && break; sleep 0.1; done
+          set +e
+          node dist/cli.js check "$(cat url.txt)"
+          test $? -eq 1
       - name: Run the built CLI on the README's example, which has 5 problems
         run: |
           set +e
