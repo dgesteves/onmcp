@@ -105,6 +105,44 @@ describe('lint', () => {
     expect(() => lint(snapshot, rules, config)).toThrow(ConfigError);
   });
 
+  test.each([
+    [
+      { maxLenght: 4 },
+      'Unknown option "maxLenght" for "short-names" in the config. Did you mean "maxLength"?',
+    ],
+    [{ size: 4 }, 'Unknown option "size" for "short-names" in the config: it takes "maxLength".'],
+    // Not an option, though every object has it.
+    [
+      { toString: 4 },
+      'Unknown option "toString" for "short-names" in the config: it takes "maxLength".',
+    ],
+    [
+      { maxLength: '4' },
+      'The config sets "maxLength" for "short-names" to "4": it takes a number.',
+    ],
+    [
+      { maxLength: [4] },
+      'The config sets "maxLength" for "short-names" to [4]: it takes a number.',
+    ],
+  ])('options %j are an error', (options, message) => {
+    expect(() => lint(snapshot, rules, { rules: { 'short-names': ['warning', options] } })).toThrow(
+      new ConfigError(message),
+    );
+  });
+
+  test('options for a rule that has none are an error', () => {
+    expect(() =>
+      lint(snapshot, rules, { rules: { 'needs-description': ['error', { strict: true }] } }),
+    ).toThrow(
+      new ConfigError(
+        'Unknown option "strict" for "needs-description" in the config: it has no options.',
+      ),
+    );
+    expect(
+      lint(snapshot, rules, { rules: { 'needs-description': ['error', {}] } }).errorCount,
+    ).toBe(1);
+  });
+
   test('a rule that throws stops the run, and the error names it', () => {
     const broken: Rule = {
       name: 'broken',

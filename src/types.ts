@@ -87,6 +87,10 @@ export interface Rule<Options extends object = object> {
   description: string;
   /** The severity it reports at unless the config says otherwise. */
   severity: Severity;
+  /**
+   * Every option the rule takes, with its default. A config can set only these, and each to a
+   * value of its default's type.
+   */
   defaults?: Options;
   check(context: RuleContext<Options>): void;
 }

@@ -108,7 +108,7 @@ Every rule is on, at the severity above, until a config says otherwise. onmcp re
 }
 ```
 
-Each rule takes `"off"`, `"warning"` or `"error"`, or `[severity, options]` for a rule that has options. A rule onmcp doesn't have, or a key it doesn't read, stops the run with exit code `2` before any server starts, so a typo can't turn a rule off by accident:
+Each rule takes `"off"`, `"warning"` or `"error"`, or `[severity, options]` for a rule that has options. A rule onmcp doesn't have, an option a rule doesn't take, a value of the wrong type, or a key onmcp doesn't read, stops the run with exit code `2` before any server starts, so a typo can't turn a rule off by accident:
 
 ```console
 $ onmcp check tools.json
