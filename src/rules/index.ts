@@ -4,6 +4,7 @@ import { descriptionBudget } from './description-budget.js';
 import { hiddenCharacters } from './hidden-characters.js';
 import { injectionPhrases } from './injection-phrases.js';
 import { paramDescription } from './param-description.js';
+import { promptDescription } from './prompt-description.js';
 import { requiredProperties } from './required-properties.js';
 import { schemaObject } from './schema-object.js';
 import { sensitivePaths } from './sensitive-paths.js';
@@ -22,6 +23,7 @@ export const rules: readonly Rule[] = [
   schemaObject,
   requiredProperties,
   paramDescription,
+  promptDescription,
   descriptionBudget,
   contextBudget,
   toolAnnotations,
