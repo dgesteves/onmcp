@@ -6,7 +6,10 @@ import {
   SdkError,
   SdkErrorCode,
   SdkHttpError,
+  SSEClientTransport,
+  SseError,
   StreamableHTTPClientTransport,
+  type Transport,
 } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
@@ -23,7 +26,7 @@ export interface StdioServer {
 }
 
 export interface HttpServer {
-  /** The server's Streamable HTTP endpoint, such as `https://example.com/mcp`. */
+  /** The server's endpoint, such as `https://example.com/mcp`, or `/sse` for HTTP+SSE. */
   url: string | URL;
   /** Sent with every request, such as `{ Authorization: 'Bearer <token>' }`. */
   headers?: Record<string, string>;
@@ -73,7 +76,6 @@ export async function readStdioServer(
   server: StdioServer,
   options: ConnectOptions = {},
 ): Promise<Snapshot> {
-  const { timeoutMs = 30_000 } = options;
   const transport = new StdioClientTransport({
     command: server.command,
     args: server.args ?? [],
@@ -86,54 +88,74 @@ export async function readStdioServer(
     stderr = (stderr + chunk.toString('utf8')).slice(-STDERR_TAIL);
   });
 
-  const client = new Client({ name: 'onmcp', version: VERSION });
   const shown = [server.command, ...(server.args ?? [])].join(' ');
   try {
-    await client.connect(transport, { timeout: timeoutMs });
-    return await snapshotFromClient(client, options);
+    return await listOver(transport, options);
   } catch (error) {
     if (error instanceof SnapshotError) throw error;
     const output = stderr.trim() ? `\nIts stderr ended with:\n${indent(stderr.trim())}` : '';
     throw new SnapshotError(`Couldn’t list what \`${shown}\` has: ${describe(error)}${output}`, {
       cause: error,
     });
-  } finally {
-    await client.close().catch(() => undefined);
   }
 }
 
-/** Connects to a server over Streamable HTTP, lists what it has, and ends the session. */
+/**
+ * Connects to a server over Streamable HTTP, lists what it has, and ends the session. A server
+ * that answers the first POST with a 4xx gets a second try over HTTP+SSE, the transport MCP had
+ * before, as the spec says a client should.
+ */
 export async function readHttpServer(
   server: HttpServer,
   options: ConnectOptions = {},
 ): Promise<Snapshot> {
-  const { timeoutMs = 30_000 } = options;
   const href = String(server.url);
   if (!URL.canParse(href)) throw new SnapshotError(`"${href}" isn’t a URL.`);
   const url = new URL(href);
-  const transport = new StreamableHTTPClientTransport(url, {
-    ...(server.headers !== undefined && { requestInit: { headers: server.headers } }),
-  });
-
-  const client = new Client({ name: 'onmcp', version: VERSION });
+  const requestInit = { headers: server.headers ?? {} };
   // Without the query or user info, which can hold a token: error messages end up in CI logs.
   const shown = `${url.origin}${url.pathname}`;
+  const fail = (error: unknown) =>
+    error instanceof SnapshotError
+      ? error
+      : new SnapshotError(`Couldn’t list what ${shown} has: ${describeHttp(error)}`, {
+          cause: error,
+        });
+
+  try {
+    return await listOver(new StreamableHTTPClientTransport(url, { requestInit }), options);
+  } catch (error) {
+    // A 401 or 403 is about the token, not the transport: HTTP+SSE would get the same.
+    const status = error instanceof SdkHttpError ? error.status : 0;
+    if (status < 400 || status >= 500 || status === 401 || status === 403) throw fail(error);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- for the servers still on it
+      return await listOver(new SSEClientTransport(url, { requestInit }), options);
+    } catch (sseError) {
+      // A URL that can't open an event stream either isn't an endpoint at all, and what the POST
+      // got says so better, unless the GET was the one that asked for a token.
+      throw fail(sseError instanceof SseError && sseError.code !== 401 ? error : sseError);
+    }
+  }
+}
+
+/** Connects over the transport, lists what the server has, and closes the connection. */
+async function listOver(transport: Transport, options: ConnectOptions): Promise<Snapshot> {
+  const { timeoutMs = 30_000 } = options;
+  const client = new Client({ name: 'onmcp', version: VERSION });
   try {
     await client.connect(transport, { timeout: timeoutMs });
     return await snapshotFromClient(client, options);
-  } catch (error) {
-    if (error instanceof SnapshotError) throw error;
-    throw new SnapshotError(`Couldn’t list what ${shown} has: ${describeHttp(error)}`, {
-      cause: error,
-    });
   } finally {
-    // close() only aborts the requests still open: the DELETE ends the session on the server too.
-    // A server that doesn't answer it gets as long as it has for any request, and close() then
-    // gives up on it.
-    await Promise.race([
-      transport.terminateSession(),
-      delay(timeoutMs, undefined, { ref: false }),
-    ]).catch(() => undefined);
+    // close() only aborts the requests still open: the DELETE ends a Streamable HTTP session on
+    // the server too. A server that doesn't answer it gets as long as it has for any request, and
+    // close() then gives up on it.
+    if (transport instanceof StreamableHTTPClientTransport) {
+      await Promise.race([
+        transport.terminateSession(),
+        delay(timeoutMs, undefined, { ref: false }),
+      ]).catch(() => undefined);
+    }
     await client.close().catch(() => undefined);
   }
 }
@@ -157,13 +179,18 @@ function describe(error: unknown): string {
 const ENDPOINT = 'is that the server’s MCP endpoint? It often ends in /mcp.';
 
 function describeHttp(error: unknown): string {
-  if (error instanceof SdkHttpError) {
-    const status = `${error.status} ${STATUS_CODES[error.status] ?? ''}`.trim();
-    if (error.status === 401) {
-      return `it answered ${status}: send a token in an Authorization header.`;
-    }
-    // Not there, or there but not taking a POST: a page, or a server on the older HTTP+SSE.
-    if (error.status === 404 || error.status === 405) return `it answered ${status}: ${ENDPOINT}`;
+  // The status of a POST that failed, or of the GET for an HTTP+SSE event stream.
+  const code =
+    error instanceof SdkHttpError
+      ? error.status
+      : error instanceof SseError
+        ? error.code
+        : undefined;
+  if (code !== undefined) {
+    const status = `${code} ${STATUS_CODES[code] ?? ''}`.trim();
+    if (code === 401) return `it answered ${status}: send a token in an Authorization header.`;
+    // Not there, or there but taking neither a POST nor a GET for an event stream: a page.
+    if (code === 404 || code === 405) return `it answered ${status}: ${ENDPOINT}`;
     return `it answered ${status}.`;
   }
   if (error instanceof SdkError) {

@@ -46,11 +46,12 @@ onmcp check -- npx -y @modelcontextprotocol/server-everything
 onmcp check -- node ./dist/server.js --read-only
 ```
 
-Or a server over Streamable HTTP, at its endpoint. `--header` sends a token, or any other header, with each request:
+Or a server over HTTP, at its endpoint. onmcp speaks Streamable HTTP, and falls back to the older HTTP+SSE for a server that doesn't take it. `--header` sends a token, or any other header, with each request:
 
 ```sh
 onmcp check https://mcp.deepwiki.com/mcp
 onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
+onmcp check http://localhost:3001/sse
 ```
 
 Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Inspector log, a bare array of tools, or `{ server, instructions, tools, prompts, resources }`:
@@ -88,7 +89,7 @@ Each rule's page says why it matters, with examples and the fix.
 
 ## Planned
 
-- Servers on the older HTTP+SSE transport, and OAuth sign-in for HTTP servers
+- OAuth sign-in for HTTP servers
 - A config file, to turn rules off or change their options
 - JSON, SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
 - Rules for context budgets, tool annotations, and names a model mixes up
