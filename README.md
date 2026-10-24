@@ -87,6 +87,7 @@ onmcp check -f json tools.json | jq '.problems[] | select(.severity == "error") 
 | [`schema-object`](docs/rules/schema-object.md)             | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
 | [`required-properties`](docs/rules/required-properties.md) | error   | required names only properties the schema has, at every depth.                                                  |
 | [`param-description`](docs/rules/param-description.md)     | warning | Every argument in a tool’s inputSchema has a description, at every depth.                                       |
+| [`description-budget`](docs/rules/description-budget.md)   | warning | A tool’s description fits in maxTokens (500 by default): a model reads it every turn.                           |
 | [`hidden-characters`](docs/rules/hidden-characters.md)     | error   | No invisible characters in any text a model reads: names, descriptions, schemas.                                |
 | [`injection-phrases`](docs/rules/injection-phrases.md)     | error   | No text that tells the model to drop its instructions, hide things from the user, or poses as a system message. |
 | [`sensitive-paths`](docs/rules/sensitive-paths.md)         | warning | No credential or agent config paths, such as ~/.ssh or mcp.json, in what a model reads.                         |
@@ -103,7 +104,8 @@ Every rule is on, at the severity above, until a config says otherwise. onmcp re
 {
   "rules": {
     "param-description": "off",
-    "sensitive-paths": "error"
+    "sensitive-paths": "error",
+    "description-budget": ["warning", { "maxTokens": 300 }]
   }
 }
 ```
