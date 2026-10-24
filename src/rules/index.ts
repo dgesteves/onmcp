@@ -8,6 +8,7 @@ import { promptDescription } from './prompt-description.js';
 import { requiredProperties } from './required-properties.js';
 import { resourceDescription } from './resource-description.js';
 import { schemaObject } from './schema-object.js';
+import { schemaValues } from './schema-values.js';
 import { sensitivePaths } from './sensitive-paths.js';
 import { similarNames } from './similar-names.js';
 import { toolAnnotations } from './tool-annotations.js';
@@ -23,6 +24,7 @@ export const rules: readonly Rule[] = [
   similarNames,
   schemaObject,
   requiredProperties,
+  schemaValues,
   paramDescription,
   promptDescription,
   resourceDescription,
