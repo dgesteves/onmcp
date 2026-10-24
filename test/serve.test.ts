@@ -46,11 +46,15 @@ describe('onmcp’s MCP server', () => {
   test('passes its own rules', async () => {
     const client = await connect();
     const snapshot = await snapshotFromClient(client);
-    expect(snapshot.tools.map((tool) => tool.name)).toEqual(['check_server', 'check_listing']);
+    expect(snapshot.tools.map((tool) => tool.name)).toEqual([
+      'check_server',
+      'check_listing',
+      'explain_rule',
+    ]);
     expect(lint(snapshot, rules).problems).toEqual([]);
   });
 
-  test('marks check_listing read-only, and check_server not', async () => {
+  test('marks check_listing and explain_rule read-only, and check_server not', async () => {
     const { tools } = await (await connect()).listTools();
     expect(Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations]))).toEqual({
       check_server: {
@@ -60,6 +64,7 @@ describe('onmcp’s MCP server', () => {
         openWorldHint: true,
       },
       check_listing: { readOnlyHint: true, openWorldHint: false },
+      explain_rule: { readOnlyHint: true, openWorldHint: false },
     });
   });
 });
@@ -155,5 +160,27 @@ describe('check_server', () => {
     const { isError, text } = await call(await connect(), 'check_server', args);
     expect(isError).toBe(true);
     expect(text).toBe(message);
+  });
+});
+
+describe('explain_rule', () => {
+  test('returns the rule’s docs page', async () => {
+    const { isError, text } = await call(await connect(), 'explain_rule', {
+      rule: 'param-description',
+    });
+    expect(isError).toBe(false);
+    expect(text).toMatch(
+      /^# param-description\n\nEvery argument in a tool's `inputSchema` has a description/,
+    );
+    expect(text).toContain('## Fix');
+  });
+
+  test('takes only the names of onmcp’s rules', async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const schema = tools.find((tool) => tool.name === 'explain_rule')?.inputSchema;
+    expect(schema?.properties?.rule).toMatchObject({ enum: rules.map((rule) => rule.name) });
+    const { isError } = await call(client, 'explain_rule', { rule: '../../package' });
+    expect(isError).toBe(true);
   });
 });
