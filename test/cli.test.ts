@@ -11,12 +11,18 @@ const fixture = (name: string) => new URL(`fixtures/${name}`, import.meta.url).p
 const listing = JSON.parse(readFileSync(fixture('servers/docs.json'), 'utf8')) as object;
 
 async function cli(...argv: string[]) {
+  return cliIn(process.cwd(), ...argv);
+}
+
+/** Runs the CLI as if from the folder, which is where it looks for onmcp.config.json. */
+async function cliIn(cwd: string, ...argv: string[]) {
   let stdout = '';
   let stderr = '';
   const code = await main(argv, {
     stdout: (text) => (stdout += text),
     stderr: (text) => (stderr += text),
     color: false,
+    cwd,
   });
   return { code, stdout, stderr };
 }
@@ -80,6 +86,32 @@ describe('onmcp check', () => {
     expect(code).toBe(EXIT.usage);
     expect(stderr).toBe(
       'onmcp: Couldn’t list what `onmcp-no-such-command --help` has: the command wasn’t found.\n',
+    );
+  });
+
+  test('reads onmcp.config.json from the folder it runs in', async () => {
+    const { code, stdout } = await cliIn(fixture('config'), 'check', fixture('undescribed.json'));
+    expect(code).toBe(EXIT.ok);
+    expect(stdout).toBe('✔ No problems in 2 tools\n');
+  });
+
+  test('reads the config --config names', async () => {
+    const { code, stdout } = await cli(
+      'check',
+      '--config',
+      fixture('config/onmcp.config.json'),
+      fixture('undescribed.json'),
+    );
+    expect(code).toBe(EXIT.ok);
+    expect(stdout).toBe('✔ No problems in 2 tools\n');
+  });
+
+  test('stops at a config that names an unknown rule, before it reads anything', async () => {
+    const file = fixture('config/typo.json');
+    const { code, stderr } = await cli('check', '-c', file, '--', 'onmcp-no-such-command');
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toBe(
+      `onmcp: ${file}: Unknown rule "tool-descripton" in the config. Did you mean "tool-description"?\n`,
     );
   });
 

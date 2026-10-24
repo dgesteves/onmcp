@@ -1,4 +1,5 @@
 import type { Config, Problem, Rule, Severity, Snapshot } from './types.js';
+import { closest } from './util/closest.js';
 
 export interface LintResult {
   problems: Problem[];
@@ -11,22 +12,41 @@ export class ConfigError extends Error {
   override name = 'ConfigError';
 }
 
+/** A rule as a config sets it: on, at a severity, with its options. */
+export interface ConfiguredRule {
+  rule: Rule;
+  severity: Severity;
+  options: object;
+}
+
+/**
+ * The rules the config leaves on, in rule order, each at the severity and with the options it
+ * gives them. A config that names a rule onmcp doesn't have, or sets one in a way it can't read,
+ * is a ConfigError.
+ */
+export function configure(rules: readonly Rule[], config: Config = {}): ConfiguredRule[] {
+  const settings = config.rules ?? {};
+  const known = new Set(rules.map((rule) => rule.name));
+  for (const name of Object.keys(settings)) {
+    if (known.has(name)) continue;
+    const meant = closest(name, known);
+    throw new ConfigError(
+      `Unknown rule "${name}" in the config.${meant ? ` Did you mean "${meant}"?` : ''}`,
+    );
+  }
+  return rules.flatMap((rule) => {
+    const setting = resolve(rule, settings[rule.name]);
+    return setting ? [{ rule, ...setting }] : [];
+  });
+}
+
 /**
  * Runs each rule on the snapshot, at the severity and with the options the config gives it, and
  * returns the problems in rule order. A rule that throws stops the run: its error names the rule.
  */
 export function lint(snapshot: Snapshot, rules: readonly Rule[], config: Config = {}): LintResult {
-  const settings = config.rules ?? {};
-  const known = new Set(rules.map((rule) => rule.name));
-  for (const name of Object.keys(settings)) {
-    if (!known.has(name)) throw new ConfigError(`Unknown rule "${name}" in the config.`);
-  }
-
   const problems: Problem[] = [];
-  for (const rule of rules) {
-    const setting = resolve(rule, settings[rule.name]);
-    if (!setting) continue;
-    const { severity, options } = setting;
+  for (const { rule, severity, options } of configure(rules, config)) {
     try {
       rule.check({
         snapshot,

@@ -60,10 +60,11 @@ Or check a saved listing: a `tools/list` result, a JSON-RPC response from an Ins
 onmcp check tools.json
 ```
 
-| Option                       | What it does                                                   |
-| ---------------------------- | -------------------------------------------------------------- |
-| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one   |
-| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`) |
+| Option                       | What it does                                                      |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `-c, --config <file>`        | The config to use (default: `onmcp.config.json`, if there is one) |
+| `-H, --header <name: value>` | Sent with each request to a URL; repeat it for more than one      |
+| `--timeout <seconds>`        | How long the server has to answer each request (default: `30`)    |
 
 onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` when it couldn't run: bad arguments, a file it can't read, or a server that didn't start or answer.
 
@@ -87,10 +88,29 @@ onmcp exits `0` with no errors (warnings alone pass), `1` with errors, and `2` w
 
 Each rule's page says why it matters, with examples and the fix.
 
+## Config
+
+Every rule is on, at the severity above, until a config says otherwise. onmcp reads `onmcp.config.json` from the folder it runs in, or the file `--config` names:
+
+```json
+{
+  "rules": {
+    "param-description": "off",
+    "sensitive-paths": "error"
+  }
+}
+```
+
+Each rule takes `"off"`, `"warning"` or `"error"`, or `[severity, options]` for a rule that has options. A rule onmcp doesn't have, or a key it doesn't read, stops the run with exit code `2` before any server starts, so a typo can't turn a rule off by accident:
+
+```console
+$ onmcp check tools.json
+onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you mean "param-description"?
+```
+
 ## Planned
 
 - OAuth sign-in for HTTP servers
-- A config file, to turn rules off or change their options
 - JSON, SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
 - Rules for context budgets, tool annotations, and names a model mixes up
 - An MCP server, so the agent writing your server can check it as it goes

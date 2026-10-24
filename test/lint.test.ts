@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { ConfigError, lint } from '../src/lint.js';
+import { ConfigError, configure, lint } from '../src/lint.js';
 import type { Config, Rule, Snapshot } from '../src/types.js';
 
 const snapshot: Snapshot = {
@@ -94,6 +94,12 @@ describe('lint', () => {
     );
   });
 
+  test('says which rule a misspelled one probably meant', () => {
+    expect(() => lint(snapshot, rules, { rules: { 'short-nmaes': 'off' } })).toThrow(
+      new ConfigError('Unknown rule "short-nmaes" in the config. Did you mean "short-names"?'),
+    );
+  });
+
   test('a setting it can’t read is an error', () => {
     const config = { rules: { 'short-names': 'on' } } as unknown as Config;
     expect(() => lint(snapshot, rules, config)).toThrow(ConfigError);
@@ -109,5 +115,16 @@ describe('lint', () => {
       },
     };
     expect(() => lint(snapshot, [broken])).toThrow('The rule "broken" failed: TypeError: boom');
+  });
+});
+
+describe('configure', () => {
+  test('lists the rules the config leaves on, with their severity and options', () => {
+    const config: Config = {
+      rules: { 'needs-description': 'off', 'short-names': ['error', { maxLength: 8 }] },
+    };
+    expect(configure(rules, config)).toEqual([
+      { rule: shortNames, severity: 'error', options: { maxLength: 8 } },
+    ]);
   });
 });
