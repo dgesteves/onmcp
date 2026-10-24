@@ -95,6 +95,7 @@ onmcp check -f sarif tools.json > onmcp.sarif
 | ------------------------------------------------------------ | ------- | --------------------------------------------------------------------------------------------------------------- |
 | [`tool-description`](docs/rules/tool-description.md)         | error   | Every tool has a description.                                                                                   |
 | [`tool-name`](docs/rules/tool-name.md)                       | error   | Tool names use only the characters MCP allows, and at most 128 of them.                                         |
+| [`param-name`](docs/rules/param-name.md)                     | error   | Argument names use only ASCII letters, digits, "_", "-" and ".", and at most 64 of them.                        |
 | [`unique-names`](docs/rules/unique-names.md)                 | error   | No two tools or prompts share a name, and no two resources share a URI.                                         |
 | [`similar-names`](docs/rules/similar-names.md)               | warning | No two tool names differ only in case, separators, a plural or a version, such as get_user and get_users.       |
 | [`schema-object`](docs/rules/schema-object.md)               | error   | A tool’s inputSchema and outputSchema have type "object", with readable properties.                             |
