@@ -28,6 +28,7 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./schema.json": "./schema.json",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.ts",
@@ -36,14 +37,15 @@
   },
   "files": [
     "dist",
-    "docs/rules"
+    "docs/rules",
+    "schema.json"
   ],
   "engines": {
     "node": ">=22.13"
   },
   "packageManager": "pnpm@11.6.0",
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node scripts/build-schema.mjs",
     "dev": "tsdown --watch",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -55,6 +57,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.19.2",
+    "ajv": "^6.15.0",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",

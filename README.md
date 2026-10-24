@@ -128,6 +128,7 @@ Every rule is on, at the severity above, until a config says otherwise. onmcp re
 
 ```json
 {
+  "$schema": "./node_modules/onmcp/schema.json",
   "rules": {
     "param-description": "off",
     "sensitive-paths": "error",
@@ -142,6 +143,8 @@ Each rule takes `"off"`, `"warning"` or `"error"`, or `[severity, options]` for 
 $ onmcp check tools.json
 onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you mean "param-description"?
 ```
+
+`$schema` points an editor at onmcp's JSON Schema for the config, which comes with the package: it completes each rule's name and options, shows what the rule catches and its default, and marks a typo as you type it.
 
 ## MCP server
 
