@@ -7,6 +7,7 @@ import { describe, expect, test } from 'vitest';
 
 import { EXIT, main } from '../src/cli.js';
 import type { JsonReport } from '../src/report/json.js';
+import type { JsonServersReport } from '../src/report/servers.js';
 import type { SarifLog } from '../src/report/sarif.js';
 import type { ServeOptions } from '../src/serve.js';
 import { VERSION } from '../src/version.js';
@@ -389,5 +390,115 @@ describe('onmcp serve', () => {
     expect(code).toBe(EXIT.usage);
     expect(stderr).toMatch(/^serve takes only --config: the agent says what to check\./);
     expect(started).toEqual([]);
+  });
+});
+
+describe('onmcp check <host config>', () => {
+  const config = fixture('hosts/mcp.json');
+
+  /** A host config of its own, with each server's command given in full. */
+  function hostConfig(servers: Record<string, unknown>): string {
+    const file = join(mkdtempSync(join(tmpdir(), 'onmcp-host-')), '.mcp.json');
+    writeFileSync(file, JSON.stringify({ mcpServers: servers }));
+    return file;
+  }
+  const fake = (listing: string) => ({
+    command: process.execPath,
+    args: [fixture('servers/fake-server.mjs'), fixture(`servers/${listing}`)],
+  });
+
+  test('checks each server in turn, and reports them under their names', async () => {
+    const { code, stdout } = await cli('check', config);
+    expect(stdout).toContain(
+      'docs  node\n  tool sync\n  ✖ tool-description  The tool has no description.',
+    );
+    expect(stdout).toContain(
+      '\n  ✖ 1 problem (1 error, 0 warnings) in 3 tools, 1 prompt, 1 resource\n',
+    );
+    expect(stdout).toContain('files  node\n  Passed as written: ${ONMCP_TEST_UNSET}\n');
+    expect(stdout).toContain(
+      'broken  onmcp-no-such-command\n  ✖ Couldn’t list what `onmcp-no-such-command` has: the command wasn’t found.',
+    );
+    expect(stdout).toContain('off\n  Skipped: the config turns it off.');
+    expect(stdout).toMatch(
+      /\n✖ 2 problems \(1 error, 1 warning\) in 2 servers\. 1 server couldn’t be checked, and 1 was skipped\.\n$/,
+    );
+    // A server that couldn't be checked makes it 2, once the others are.
+    expect(code).toBe(EXIT.usage);
+  });
+
+  test('never prints a server’s args, env or headers, which can hold a token', async () => {
+    const { stdout, stderr } = await cli('check', config);
+    expect(stdout + stderr).not.toContain('s3cret');
+  });
+
+  test('exits 1 with errors, and 0 with warnings alone, when every server was checked', async () => {
+    expect((await cli('check', hostConfig({ docs: fake('docs.json') }))).code).toBe(EXIT.problems);
+    const files = hostConfig({ files: fake('files.json') });
+    expect((await cli('check', files)).code).toBe(EXIT.ok);
+    // --max-warnings counts the warnings across every server.
+    const { code, stderr } = await cli('check', '--max-warnings', '0', files);
+    expect(code).toBe(EXIT.problems);
+    expect(stderr).toBe('onmcp: 1 warning, more than the 0 --max-warnings allows.\n');
+  });
+
+  test('connects to a server at its url, with its headers’ variables expanded', async () => {
+    const { server } = fakeHttpServer(listing, { token: 'secret' });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address() as AddressInfo;
+    process.env.ONMCP_TEST_TOKEN = 'secret';
+    try {
+      const file = hostConfig({
+        remote: {
+          type: 'http',
+          url: `http://127.0.0.1:${port}/mcp?key=s3cret`,
+          headers: { Authorization: 'Bearer ${ONMCP_TEST_TOKEN}' },
+        },
+      });
+      const { code, stdout } = await cli('check', file);
+      expect(code).toBe(EXIT.problems);
+      // Shown without its query, which can hold a token.
+      expect(stdout).toMatch(
+        new RegExp(`^remote  http://127\\.0\\.0\\.1:${port}/mcp\n  tool sync`),
+      );
+      expect(stdout).not.toContain('s3cret');
+    } finally {
+      delete process.env.ONMCP_TEST_TOKEN;
+      server.closeAllConnections();
+      server.close();
+    }
+  });
+
+  test('prints each server’s report, or why there isn’t one, with --format json', async () => {
+    const { stdout } = await cli('check', '-f', 'json', config);
+    const report = JSON.parse(stdout) as JsonServersReport;
+    expect(report).toMatchObject({ onmcp: VERSION, errorCount: 1, warningCount: 1 });
+    expect(report.servers).toEqual([
+      expect.objectContaining({ name: 'docs', unexpanded: [], errorCount: 1, warningCount: 0 }),
+      expect.objectContaining({ name: 'files', unexpanded: ['${ONMCP_TEST_UNSET}'] }),
+      {
+        name: 'broken',
+        unexpanded: [],
+        error: 'Couldn’t list what `onmcp-no-such-command` has: the command wasn’t found.',
+      },
+      { name: 'off', unexpanded: [], skipped: 'the config turns it off.' },
+    ]);
+  });
+
+  test.each(['sarif', 'github'])(
+    'rejects --format %s, which describes one server',
+    async (format) => {
+      const { code, stdout, stderr } = await cli('check', '-f', format, config);
+      expect(code).toBe(EXIT.usage);
+      expect(stdout).toBe('');
+      expect(stderr).toMatch(new RegExp(`^--format ${format} points at one server's listing`));
+    },
+  );
+
+  test('says which field of a host config it can’t read', async () => {
+    const file = hostConfig({ docs: { command: 'node', args: 'server.js' } });
+    const { code, stderr } = await cli('check', file);
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toMatch(/Not an MCP config onmcp can read:\n {2}mcpServers\.docs\.args:/);
   });
 });

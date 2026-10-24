@@ -5,13 +5,21 @@ import { parseArgs } from 'node:util';
 
 import { lint } from './lint.js';
 import { CONFIG_FILE, findConfig, loadConfig } from './load/config.js';
-import { readSnapshot } from './load/file.js';
+import { parseSnapshotFile, readJsonFile } from './load/file.js';
+import { type HostServer, isHostConfig, readHostConfig } from './load/hosts.js';
 import { readHttpServer, readStdioServer } from './load/server.js';
 import { formatGithub } from './report/github.js';
 import { formatJson } from './report/json.js';
 import { formatPretty } from './report/pretty.js';
 import { formatSarif } from './report/sarif.js';
+import {
+  formatJsonServers,
+  formatPrettyServers,
+  type ServerResult,
+  totals,
+} from './report/servers.js';
 import { rules } from './rules/index.js';
+import type { Config, Snapshot } from './types.js';
 import { serve, type ServeOptions } from './serve.js';
 import { printable } from './util/printable.js';
 import { VERSION } from './version.js';
@@ -44,7 +52,8 @@ After --, the command that starts the server over stdio, as a host's config give
 <url> is the server's endpoint, over Streamable HTTP or the older HTTP+SSE:
   onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
 <snapshot.json> is what a server lists, saved: a tools/list result, a JSON-RPC response that holds
-one, or onmcp's own { server, instructions, tools, prompts, resources, resourceTemplates }.
+one, or onmcp's own { server, instructions, tools, prompts, resources, resourceTemplates }. Or it's
+a host's MCP config, such as .mcp.json, with mcpServers or servers: onmcp checks each server in it.
 
 serve starts onmcp's own MCP server on stdio, for the agent writing a server to check it as it
 goes. Its tools are check_server and check_listing.
@@ -156,12 +165,20 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   try {
     const config = await loadConfig(values.config ?? findConfig(io.cwd ?? '.'), rules);
     const options = { timeoutMs: seconds * 1000 };
-    const snapshot =
-      serverCommand !== undefined
-        ? await readStdioServer({ command: serverCommand, args: serverArgs }, options)
-        : url !== undefined
-          ? await readHttpServer({ url, headers }, options)
-          : await readSnapshot(target ?? '');
+    let snapshot: Snapshot;
+    if (serverCommand !== undefined) {
+      snapshot = await readStdioServer({ command: serverCommand, args: serverArgs }, options);
+    } else if (url !== undefined) {
+      snapshot = await readHttpServer({ url, headers }, options);
+    } else {
+      const file = target ?? '';
+      const json = await readJsonFile(file);
+      if (isHostConfig(json)) {
+        const servers = readHostConfig(json, file);
+        return await checkServers(servers, { config, format, maxWarnings, ...options }, io);
+      }
+      snapshot = parseSnapshotFile(json, file);
+    }
     const result = lint(snapshot, rules, config);
     // A snapshot file is where SARIF results and GitHub annotations point.
     const source =
@@ -187,18 +204,66 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
         io.stdout(formatGithub(result, source && { file: source }));
         break;
     }
-    // On stderr, so a json, sarif or github report on stdout stays one a program can read.
-    const tooMany = result.warningCount > maxWarnings;
-    if (tooMany) {
-      const count = `${result.warningCount} warning${result.warningCount === 1 ? '' : 's'}`;
-      io.stderr(`onmcp: ${count}, more than the ${maxWarnings} --max-warnings allows.\n`);
-    }
+    const tooMany = overMaxWarnings(result.warningCount, maxWarnings, io);
     return result.errorCount > 0 || tooMany ? EXIT.problems : EXIT.ok;
   } catch (error) {
     // An error can quote the server: its stderr, or the message it answered with.
     io.stderr(`onmcp: ${printable((error as Error).message, { lines: true })}\n`);
     return EXIT.usage;
   }
+}
+
+/**
+ * Checks each server in a host's config in turn, and reports them together. A server that doesn't
+ * start or answer doesn't stop the others, and makes the exit code 2 once they're checked.
+ */
+async function checkServers(
+  servers: readonly HostServer[],
+  options: { config: Config; format: string; maxWarnings: number; timeoutMs: number },
+  io: Io,
+): Promise<number> {
+  const { config, format, maxWarnings, timeoutMs } = options;
+  if (format !== 'pretty' && format !== 'json') {
+    io.stderr(
+      `--format ${format} points at one server's listing: check a host's config with pretty or json, or one server at a time.\n`,
+    );
+    return EXIT.usage;
+  }
+  const results: ServerResult[] = [];
+  for (const { name, shown, connect, unexpanded } of servers) {
+    let outcome: ServerResult['outcome'];
+    if ('skip' in connect) {
+      outcome = { skipped: connect.skip };
+    } else {
+      try {
+        const snapshot =
+          'stdio' in connect
+            ? await readStdioServer(connect.stdio, { timeoutMs })
+            : await readHttpServer(connect.http, { timeoutMs });
+        outcome = { result: lint(snapshot, rules, config), snapshot };
+      } catch (error) {
+        outcome = { error: (error as Error).message };
+      }
+    }
+    results.push({ name, shown, unexpanded, outcome });
+  }
+  io.stdout(
+    format === 'json'
+      ? formatJsonServers(results, VERSION)
+      : formatPrettyServers(results, { color: io.color }),
+  );
+  const { errorCount, warningCount, failed } = totals(results);
+  const tooMany = overMaxWarnings(warningCount, maxWarnings, io);
+  if (failed > 0) return EXIT.usage;
+  return errorCount > 0 || tooMany ? EXIT.problems : EXIT.ok;
+}
+
+// On stderr, so a json, sarif or github report on stdout stays one a program can read.
+function overMaxWarnings(count: number, maxWarnings: number, io: Io): boolean {
+  if (count <= maxWarnings) return false;
+  const warnings = `${count} warning${count === 1 ? '' : 's'}`;
+  io.stderr(`onmcp: ${warnings}, more than the ${maxWarnings} --max-warnings allows.\n`);
+  return true;
 }
 
 // A file by its path from the folder onmcp runs in, which in CI is the repository's root, with
