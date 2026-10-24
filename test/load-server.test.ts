@@ -81,6 +81,34 @@ describe('readHttpServer', () => {
     });
   });
 
+  test('falls back to HTTP+SSE when the server doesn’t take the POST', async () => {
+    const { requests, base } = await serve({ legacy: true });
+    const snapshot = await readHttpServer({ url: `${base}/sse`, headers: { 'X-Team': 'docs' } });
+    expect(snapshot.server).toEqual({ name: 'docs', version: '2.1.0', title: 'Docs' });
+    expect(snapshot.tools.map((tool) => tool.name)).toEqual(['search_docs', 'get_page', 'sync']);
+    expect(snapshot.prompts).toHaveLength(1);
+    expect(snapshot.resources).toHaveLength(1);
+    // The Streamable HTTP POST it refused, then the stream and the messages, all with the header.
+    expect(requests.slice(0, 2).map(({ method }) => method)).toEqual(['POST', 'GET']);
+    expect(requests.every(({ headers }) => headers['x-team'] === 'docs')).toBe(true);
+  });
+
+  test('says what the POST got when the URL is no HTTP+SSE endpoint either', async () => {
+    const { requests, base } = await serve({ legacy: true });
+    await expect(readHttpServer({ url: `${base}/mcp` })).rejects.toThrow(
+      new SnapshotError(
+        `Couldn’t list what ${base}/mcp has: it answered 405 Method Not Allowed: is that the server’s MCP endpoint? It often ends in /mcp.`,
+      ),
+    );
+    expect(requests.map(({ method }) => method)).toEqual(['POST', 'GET']);
+  });
+
+  test('doesn’t fall back when the server wants a token', async () => {
+    const { requests, base } = await serve({ token: 'secret', legacy: true });
+    await expect(readHttpServer({ url: `${base}/sse` })).rejects.toThrow(/401 Unauthorized/);
+    expect(requests.map(({ method }) => method)).toEqual(['POST']);
+  });
+
   test('sends the headers it’s given with every request', async () => {
     const { requests, base } = await serve({ token: 'secret' });
     const snapshot = await readHttpServer({
