@@ -2,8 +2,8 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { ConfigError } from '../lint.js';
-import type { Config } from '../types.js';
+import { ConfigError, configure } from '../lint.js';
+import type { Config, Rule } from '../types.js';
 
 /** The config onmcp reads from the folder it runs in, unless --config names another. */
 export const CONFIG_FILE = 'onmcp.config.json';
@@ -44,6 +44,25 @@ export async function readConfig(file: string): Promise<Config> {
     throw new ConfigError(`${file}: "rules" maps each rule's name to its setting.`);
   }
   return { rules: rules as Config['rules'] };
+}
+
+/**
+ * Reads the config, if there is one, and checks it against the rules, before a server starts for
+ * nothing. Its errors name the file.
+ */
+export async function loadConfig(
+  file: string | undefined,
+  rules: readonly Rule[],
+): Promise<Config> {
+  if (file === undefined) return {};
+  const config = await readConfig(file);
+  try {
+    configure(rules, config);
+  } catch (error) {
+    if (error instanceof ConfigError) throw new ConfigError(`${file}: ${error.message}`);
+    throw error;
+  }
+  return config;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

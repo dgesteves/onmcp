@@ -143,11 +143,33 @@ $ onmcp check tools.json
 onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you mean "param-description"?
 ```
 
+## MCP server
+
+`onmcp serve` starts onmcp's own MCP server on stdio, so the agent writing your server can check it as it goes, and fix what it finds before you see it. Add it to Claude Code:
+
+```sh
+claude mcp add onmcp -- npx -y onmcp serve
+```
+
+Or to the config of a host that takes `mcpServers`, such as Cursor or Claude Desktop:
+
+```json
+{ "mcpServers": { "onmcp": { "command": "npx", "args": ["-y", "onmcp", "serve"] } } }
+```
+
+Until the first release, use `node /path/to/onmcp/dist/cli.js serve` in place of `npx -y onmcp serve`.
+
+| Tool            | What it does                                                                                                                                                                                                                                                                                               |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `check_server`  | Starts a server with `command` and `args`, or connects to one at `url` (with `headers`), and checks what it lists. The command runs in the folder onmcp started in. Its annotations say it isn't read-only, since a command could do anything, so a host that asks before such calls asks before this one. |
+| `check_listing` | Checks a listing given as JSON, such as one from an Inspector log. Read-only.                                                                                                                                                                                                                              |
+
+Each returns the problems as the pretty format prints them, and as structured content in the shape `--format json` prints. Both read `onmcp.config.json` from the folder onmcp started in, on every call, or the file `--config` names.
+
 ## Planned
 
 - OAuth sign-in for HTTP servers
 - A GitHub Action that checks the server on every pull request, once onmcp is on npm
-- An MCP server, so the agent writing your server can check it as it goes
 
 ## More from @dgesteves
 

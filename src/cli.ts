@@ -3,8 +3,8 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { ConfigError, configure, lint } from './lint.js';
-import { CONFIG_FILE, findConfig, readConfig } from './load/config.js';
+import { lint } from './lint.js';
+import { CONFIG_FILE, findConfig, loadConfig } from './load/config.js';
 import { readSnapshot } from './load/file.js';
 import { readHttpServer, readStdioServer } from './load/server.js';
 import { formatGithub } from './report/github.js';
@@ -12,7 +12,7 @@ import { formatJson } from './report/json.js';
 import { formatPretty } from './report/pretty.js';
 import { formatSarif } from './report/sarif.js';
 import { rules } from './rules/index.js';
-import type { Config } from './types.js';
+import { serve, type ServeOptions } from './serve.js';
 import { printable } from './util/printable.js';
 import { VERSION } from './version.js';
 
@@ -23,6 +23,10 @@ export interface Io {
   color: boolean;
   /** The folder to look for onmcp.config.json in (default: the current one). */
   cwd?: string;
+  /** stdin is a terminal, so `serve` says it waits for an agent: bin.ts sets it. */
+  interactive?: boolean;
+  /** Starts the MCP server (default: on stdio). The tests pass their own. */
+  serve?: (options: ServeOptions) => void;
 }
 
 /** The exit codes: no errors, errors found, and onmcp couldn't run. */
@@ -31,6 +35,7 @@ export const EXIT = { ok: 0, problems: 1, usage: 2 } as const;
 const USAGE = `Usage: onmcp check [options] -- <command> [args...]
        onmcp check [options] <url>
        onmcp check [options] <snapshot.json>
+       onmcp serve [--config <file>]
 
 Checks the tools, prompts and resources an MCP server lists, the way a model reads them.
 
@@ -40,6 +45,9 @@ After --, the command that starts the server over stdio, as a host's config give
   onmcp check https://example.com/mcp --header "Authorization: Bearer $TOKEN"
 <snapshot.json> is what a server lists, saved: a tools/list result, a JSON-RPC response that holds
 one, or onmcp's own { server, instructions, tools, prompts, resources, resourceTemplates }.
+
+serve starts onmcp's own MCP server on stdio, for the agent writing a server to check it as it
+goes. Its tools are check_server and check_listing.
 
 Options:
   -c, --config <file>         The config to use (default: ${CONFIG_FILE}, if there is one)
@@ -93,6 +101,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   }
 
   const [command, ...rest] = positionals;
+  if (command === 'serve') return startServer(values, rest.length > 0 || dash !== -1, io);
   if (command !== undefined && command !== 'check') {
     io.stderr(`Unknown command "${command}".\n\n${USAGE}`);
     return EXIT.usage;
@@ -145,7 +154,7 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   }
 
   try {
-    const config = await loadConfig(values.config ?? findConfig(io.cwd ?? '.'));
+    const config = await loadConfig(values.config ?? findConfig(io.cwd ?? '.'), rules);
     const options = { timeoutMs: seconds * 1000 };
     const snapshot =
       serverCommand !== undefined
@@ -192,19 +201,6 @@ export async function main(argv: readonly string[], io: Io): Promise<number> {
   }
 }
 
-/** Reads the config and checks it against the rules, before a server starts for nothing. */
-async function loadConfig(file: string | undefined): Promise<Config> {
-  if (file === undefined) return {};
-  const config = await readConfig(file);
-  try {
-    configure(rules, config);
-  } catch (error) {
-    if (error instanceof ConfigError) throw new ConfigError(`${file}: ${error.message}`);
-    throw error;
-  }
-  return config;
-}
-
 // A file by its path from the folder onmcp runs in, which in CI is the repository's root, with
 // forward slashes, and as a URI. A file outside the folder has its full path and a file:// URI.
 function locate(file: string, cwd: string): { path: string; uri: string } {
@@ -215,4 +211,41 @@ function locate(file: string, cwd: string): { path: string; uri: string } {
   }
   const parts = path.split(sep);
   return { path: parts.join('/'), uri: parts.map(encodeURIComponent).join('/') };
+}
+
+/** Starts the MCP server, once its config is known to be right: a later edit is read per call. */
+async function startServer(
+  values: {
+    config?: string;
+    format?: string;
+    header?: string[];
+    timeout?: string;
+    'max-warnings'?: string;
+  },
+  extra: boolean,
+  io: Io,
+): Promise<number> {
+  const checkOnly =
+    values.format !== 'pretty' ||
+    values.header !== undefined ||
+    values.timeout !== undefined ||
+    values['max-warnings'] !== undefined;
+  if (extra || checkOnly) {
+    io.stderr(`serve takes only --config: the agent says what to check.\n\n${USAGE}`);
+    return EXIT.usage;
+  }
+  const cwd = io.cwd ?? process.cwd();
+  try {
+    await loadConfig(values.config ?? findConfig(cwd), rules);
+  } catch (error) {
+    io.stderr(`onmcp: ${printable((error as Error).message, { lines: true })}\n`);
+    return EXIT.usage;
+  }
+  if (io.interactive) {
+    io.stderr(
+      'onmcp serve is an MCP server: it is waiting for an agent on stdin. Add it to your agent, or run onmcp check here. Ctrl+C quits.\n',
+    );
+  }
+  (io.serve ?? serve)({ cwd, ...(values.config !== undefined && { config: values.config }) });
+  return EXIT.ok;
 }

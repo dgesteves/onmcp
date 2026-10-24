@@ -17,7 +17,12 @@ export interface JsonReport {
 
 /** Formats a lint result as JSON, for a script or a CI step to read. */
 export function formatJson(result: LintResult, snapshot: Snapshot): string {
-  const report: JsonReport = {
+  return `${JSON.stringify(jsonReport(result, snapshot), null, 2)}\n`;
+}
+
+/** The object --format json prints, which the MCP server's tools return too. */
+export function jsonReport(result: LintResult, snapshot: Snapshot): JsonReport {
+  return {
     onmcp: VERSION,
     ...(snapshot.server && { server: snapshot.server }),
     checked: {
@@ -30,5 +35,4 @@ export function formatJson(result: LintResult, snapshot: Snapshot): string {
     warningCount: result.warningCount,
     problems: result.problems,
   };
-  return `${JSON.stringify(report, null, 2)}\n`;
 }
