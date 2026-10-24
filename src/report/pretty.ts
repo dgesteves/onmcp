@@ -2,6 +2,7 @@ import { styleText } from 'node:util';
 
 import type { LintResult } from '../lint.js';
 import type { Problem, Snapshot } from '../types.js';
+import { printable } from '../util/printable.js';
 import { label } from './target.js';
 
 export interface PrettyOptions {
@@ -32,11 +33,15 @@ export function formatPretty(
   const lines: string[] = [];
   for (const [key, problems] of groups) {
     if (problems.length === 0) continue;
-    lines.push('', `  ${style('bold', key)}`);
+    // Names, URIs and messages hold what the server wrote, which can be meant for the terminal.
+    lines.push('', `  ${style('bold', printable(key))}`);
     for (const problem of problems) {
       const symbol = problem.severity === 'error' ? style('red', '✖') : style('yellow', '⚠');
-      lines.push(`  ${symbol} ${style('dim', problem.rule.padEnd(width))}  ${problem.message}`);
-      if (problem.fix) lines.push(`    ${' '.repeat(width)}  ${style('cyan', `→ ${problem.fix}`)}`);
+      const message = printable(problem.message);
+      lines.push(`  ${symbol} ${style('dim', problem.rule.padEnd(width))}  ${message}`);
+      if (problem.fix) {
+        lines.push(`    ${' '.repeat(width)}  ${style('cyan', `→ ${printable(problem.fix)}`)}`);
+      }
     }
   }
 

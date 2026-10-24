@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
@@ -165,6 +167,17 @@ describe('onmcp check', () => {
       fixture('servers/docs.json'),
     );
     expect(stdout).toMatch(/^::error title=tool-description%3A tool \w+::/);
+  });
+
+  test('writes control characters in an error as code points, and keeps its lines', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'onmcp-'));
+    writeFileSync(
+      join(folder, 'onmcp.config.json'),
+      JSON.stringify({ rules: { 'evil\u001b[2J': 'off' } }),
+    );
+    const { code, stderr } = await cliIn(folder, 'check', fixture('undescribed.json'));
+    expect(code).toBe(EXIT.usage);
+    expect(stderr).toMatch(/Unknown rule "evil<U\+001B>\[2J" in the config\.\n$/);
   });
 
   test('reads onmcp.config.json from the folder it runs in', async () => {

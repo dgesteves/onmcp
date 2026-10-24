@@ -91,3 +91,24 @@ test('colors only when asked to', () => {
   expect(formatPretty(problems, snapshot)).not.toContain('\u001b[');
   expect(formatPretty(problems, snapshot, { color: true })).toContain('\u001b[31m✖');
 });
+
+test('shows what a server wrote, and passes nothing on to the terminal', () => {
+  const name = 'evil\u001b[2J\n::warning::injected';
+  const output = formatPretty(
+    result([
+      {
+        rule: 'a',
+        severity: 'error',
+        target: { kind: 'tool', name },
+        message: `The name "${name}" is bad.`,
+        fix: 'Rename\u009b31m it.',
+      },
+    ]),
+    snapshotOf({ tools: [{ name, inputSchema }] }),
+  );
+  expect(output).not.toContain('\u001b');
+  expect(output).not.toContain('\u009b');
+  expect(output.split('\n').filter((line) => line.startsWith('::'))).toEqual([]);
+  expect(output).toContain('  tool evil<U+001B>[2J<U+000A>::warning::injected\n');
+  expect(output).toContain('→ Rename<U+009B>31m it.');
+});
