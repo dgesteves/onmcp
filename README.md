@@ -138,8 +138,9 @@ onmcp: onmcp.config.json: Unknown rule "param-descripton" in the config. Did you
 
 ## Planned
 
+- Resource templates: onmcp reads `resources/list`, and not yet `resources/templates/list`
 - OAuth sign-in for HTTP servers
-- SARIF and GitHub annotation output, and a GitHub Action that checks the server on every pull request
+- A GitHub Action that checks the server on every pull request, once onmcp is on npm
 - An MCP server, so the agent writing your server can check it as it goes
 
 ## More from @dgesteves
